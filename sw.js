@@ -1,4 +1,4 @@
-var CACHE = 'cm-20260930224530';
+var CACHE = 'cm-20261001063012';
 var ARQS = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', function (e) { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ARQS); })); });
 self.addEventListener('activate', function (e) {
