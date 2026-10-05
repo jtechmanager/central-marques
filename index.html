@@ -396,6 +396,23 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
 .dsem button { height: 48px; border-radius: 14px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
 .dsem button.on { background: var(--accent); color: var(--on-accent); }
 
+/* ---------- documentos ---------- */
+.tag.okv { background: var(--green-soft); color: var(--green); }
+.doc-item .meta .num { letter-spacing: .04em; }
+.num-box { display: flex; align-items: center; gap: 6px; padding: 12px 8px 12px 14px; border-radius: 14px; background: var(--surface-2); margin-bottom: 12px; }
+.num-box div { flex: 1; min-width: 0; }
+.num-box small { display: block; color: var(--muted); font-size: 12px; }
+.num-box b { font-size: 19px; letter-spacing: .05em; word-break: break-all; }
+.tipos-doc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tipos-doc button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 12px; background: var(--surface-2); border: 2px solid transparent; font-size: 22px; }
+.tipos-doc button span { font-size: 12px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.2; }
+.tipos-doc button.sel { border-color: var(--accent); background: var(--accent-soft); }
+.tipos-doc button.sel span { color: var(--accent); }
+.seg.st-ir { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); }
+.seg.st-ir button { font-size: 13px; padding: 10px 4px; }
+.aviso-box { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--amber-soft); color: var(--amber); margin: 4px 0 6px; font-size: 14px; }
+.campo input:disabled { opacity: .45; }
+
 /* ---------- toast / carregando ---------- */
 #toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: calc(100% - 32px); }
 .toast-msg { background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-weight: 600; font-size: 15px; box-shadow: var(--shadow); animation: subir .2s; max-width: 420px; text-align: center; }
@@ -499,7 +516,12 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     done: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
     flame: '<path d="M12 22c4 0 7-3 7-7 0-3-2-5.5-3.5-7-.4 2-1.5 3-2.5 3 0-3-1.5-6-4-8 0 3-1.5 5-3 6.5S4 12.5 4 15c0 4 3 7 8 7z"/>',
     sun2: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>',
-    bars: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+    bars: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    idcard: '<rect x="2" y="5" width="20" height="14" rx="3"/><circle cx="8" cy="12" r="2.5"/><path d="M14 10h5M14 14h3"/>',
+    copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    ext: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    eyeoff: '<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    receipt: '<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>'
   };
   function ic(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || '') + '</svg>'; }
 
@@ -523,8 +545,9 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
 
   /* ================= estado ================= */
   var S = { token: store('cm_token') || null, d: null, mes: null, view: store('cm_view') || 'mes', filtro: 'todos', histFiltro: 'todos', fila: Promise.resolve(), pend: 0,
-    modulo: ['tar', 'hab'].indexOf(store('cm_mod')) >= 0 ? store('cm_mod') : 'fin', t: null, col: store('cm_col') || 'A fazer', tagF: '',
-    h: null, hview: store('cm_hview') || 'hoje', hdia: null };
+    modulo: ['tar', 'hab', 'doc'].indexOf(store('cm_mod')) >= 0 ? store('cm_mod') : 'fin', t: null, col: store('cm_col') || 'A fazer', tagF: '',
+    h: null, hview: store('cm_hview') || 'hoje', hdia: null,
+    x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {} };
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -533,7 +556,8 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   var MODULOS = [
     { id: 'fin', nome: 'Financeiro', ic: 'wallet' },
     { id: 'tar', nome: 'Tarefas', ic: 'kanban' },
-    { id: 'hab', nome: 'Hábitos', ic: 'flame' }
+    { id: 'hab', nome: 'Hábitos', ic: 'flame' },
+    { id: 'doc', nome: 'Documentos', ic: 'idcard' }
   ];
 
   /* ================= servidor ================= */
@@ -576,7 +600,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
-    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : 'd');
+    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : 'd');
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
@@ -660,10 +684,10 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['fin', 'tar', 'hab'].filter(function (m) { return m !== S.modulo; }));
-    carregarModulo(ordem[0]).then(function () { return carregarModulo(ordem[1]); }).then(function () { return carregarModulo(ordem[2]); }).catch(falhou);
+    var ordem = [S.modulo].concat(['fin', 'tar', 'hab', 'doc'].filter(function (m) { return m !== S.modulo; }));
+    ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
-  var CARGA_MOD = { fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'] };
+  var CARGA_MOD = { fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     return api(c[0]).then(function (d) {
@@ -719,6 +743,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   function render() {
     if (S.modulo === 'tar') { if (S.t) renderTar(); return; }
     if (S.modulo === 'hab') { if (S.h) renderHab(); return; }
+    if (S.modulo === 'doc') { if (S.x) renderDoc(); return; }
     if (!S.d) return;
     var vencidos = S.d.lancamentos.filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
@@ -1562,6 +1587,206 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
   }
 
+  /* ================= DOCUMENTOS ================= */
+  var DVIEWS = [{ id: 'docs', nome: 'Documentos', ic: 'idcard' }, { id: 'ir', nome: 'Imposto de Renda', ic: 'receipt' }];
+  var EMO_DOC = { 'CPF': '🧾', 'RG': '🪪', 'CNH': '🚗', 'Passaporte': '🛂', 'Título de eleitor': '🗳️', 'CTPS': '📕', 'Certidão': '📜', 'Reservista': '🎖️', 'Outro': '📄' };
+  var COR_IR = { 'Pendente': 'atraso', 'Em andamento': 'hoje', 'Entregue': 'okv', 'Retificada': 'okv', 'Malha fina': 'atraso' };
+  function mascarar(n) {
+    var tot = (n.match(/[0-9a-z]/gi) || []).length, vistos = 0;
+    return n.replace(/[0-9a-z]/gi, function (c) { vistos++; return vistos > tot - 4 ? c : '•'; });
+  }
+  function diasDoc(d) { return d.validade ? diasEntre(S.x.hoje, d.validade) : null; }
+  function statusDoc(d) {
+    var n = diasDoc(d);
+    if (n === null) return '<span class="tag">Sem validade</span>';
+    if (n < 0) return '<span class="tag atraso">Vencido há ' + (-n) + 'd</span>';
+    if (n === 0) return '<span class="tag atraso">Vence hoje</span>';
+    if (n <= 90) return '<span class="tag hoje">Vence em ' + n + 'd</span>';
+    return '<span class="tag okv">Válido até ' + dataBR(d.validade).slice(3) + '/' + d.validade.slice(2, 4) + '</span>';
+  }
+  function urgentes() { return S.x.docs.filter(function (d) { var n = diasDoc(d); return n !== null && n <= 30; }).length; }
+  function titulares() {
+    var c = {};
+    S.x.docs.forEach(function (d) { c[d.titular] = (c[d.titular] || 0) + 1; });
+    S.x.ir.forEach(function (d) { c[d.declarante] = (c[d.declarante] || 0) + 1; });
+    return Object.keys(c).sort(function (a, b) { return c[b] - c[a] || a.localeCompare(b); });
+  }
+  function copiar(txt, rotulo) {
+    var ok = function () { toast((rotulo || 'Copiado') + ' ✓'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function () { copiarVelho(txt); ok(); });
+    else { copiarVelho(txt); ok(); }
+  }
+  function copiarVelho(txt) { var t = document.createElement('textarea'); t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); }
+  function botaoLink(url, rotulo) { return url ? '<a class="btn sec" style="text-decoration:none" href="' + esc(url) + '" target="_blank" rel="noopener">' + ic('ext') + esc(rotulo) + '</a>' : ''; }
+
+  function renderDoc() {
+    var u = urgentes();
+    var nav = DVIEWS.map(function (v) {
+      return '<button class="' + (S.dview === v.id ? 'ativo' : '') + '" data-acao="dView" data-id="' + v.id + '">' + ic(v.ic) + '<span>' + v.nome + '</span>' +
+        (v.id === 'docs' && u ? '<span class="badge">' + u + '</span>' : '') + '</button>';
+    }).join('');
+    $('#bottomNav').style.gridTemplateColumns = 'repeat(2, 1fr)';
+    $('#bottomNav').innerHTML = nav;
+    $('#subnav').innerHTML = nav; $('#subnav').hidden = false;
+    $('#view').innerHTML = S.dview === 'ir' ? vIr() : vDocs();
+  }
+
+  function vDocs() {
+    var D = S.x.docs;
+    if (!D.length) return vazio('idcard', 'Nenhum documento cadastrado', 'Toque no <b style="display:inline">+</b> para cadastrar CPF, RG, CNH, passaporte…');
+    var venc = D.filter(function (d) { var n = diasDoc(d); return n !== null && n < 0; }).length;
+    var breve = D.filter(function (d) { var n = diasDoc(d); return n !== null && n >= 0 && n <= 90; }).length;
+    var h = '<div class="cards" style="margin-top:4px">' + card2('Vencidos', '<span style="color:' + (venc ? 'var(--red)' : 'inherit') + '">' + venc + '</span>') +
+      card2('Vencem em 90 dias', '<span style="color:' + (breve ? 'var(--amber)' : 'inherit') + '">' + breve + '</span>') +
+      card2('Em dia', D.length - venc - breve) + card2('Titulares', titulares().length) + '</div>';
+    var T = titulares();
+    if (T.length > 1) h += '<div class="chips"><button class="chip' + (!S.titF ? ' ativo' : '') + '" data-acao="dTit" data-id="">Todos</button>' +
+      T.map(function (t) { return '<button class="chip' + (S.titF === t ? ' ativo' : '') + '" data-acao="dTit" data-id="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>';
+    var L = D.filter(function (d) { return !S.titF || d.titular === S.titF; }).sort(function (a, b) {
+      var x = diasDoc(a), y = diasDoc(b);
+      if (x === null && y === null) return a.titular.localeCompare(b.titular) || a.tipo.localeCompare(b.tipo);
+      if (x === null) return 1; if (y === null) return -1;
+      return x - y;
+    });
+    h += '<div class="lista">' + L.map(function (d) {
+      return '<div class="hab-item doc-item"><span class="hab-ic">' + (EMO_DOC[d.tipo] || '📄') + '</span>' +
+        '<button class="corpo" data-acao="dDet" data-id="' + d.id + '" style="text-align:left"><div class="desc">' + esc(d.tipo) + ' · ' + esc(d.titular) + '</div>' +
+        '<div class="meta">' + (d.numero ? '<span class="num">' + esc(mascarar(d.numero)) + '</span>' : '') + statusDoc(d) + '</div></button>' +
+        (d.link ? '<a class="icon-btn" href="' + esc(d.link) + '" target="_blank" rel="noopener" title="Abrir no Drive" style="color:var(--accent)">' + ic('ext') + '</a>' : '') + '</div>';
+    }).join('') + '</div>';
+    return h;
+  }
+
+  function abrirDoc(id) {
+    var d = S.x.docs.find(function (o) { return o.id === id; }); if (!d) return fecharSheet();
+    var rev = !!S.revelar[id];
+    var h = '<h2><span>' + (EMO_DOC[d.tipo] || '📄') + ' ' + esc(d.tipo) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="ttags" style="margin:-6px 0 14px"><span class="tag">' + esc(d.titular) + '</span>' + statusDoc(d) + '</div>';
+    if (d.numero) h += '<div class="num-box"><div><small>Número</small><b class="num">' + esc(rev ? d.numero : mascarar(d.numero)) + '</b></div>' +
+      '<button class="icon-btn" data-acao="dRevelar" data-id="' + id + '" title="' + (rev ? 'Ocultar' : 'Mostrar') + '">' + ic(rev ? 'eyeoff' : 'eye') + '</button>' +
+      '<button class="icon-btn" data-acao="dCopiar" data-id="' + id + '" title="Copiar">' + ic('copy') + '</button></div>';
+    h += '<div class="det-grid"><div><small>Órgão emissor</small><b>' + (esc(d.orgao) || '—') + '</b></div><div><small>Emissão</small><b>' + (d.emissao ? dataBRc(d.emissao) : '—') + '</b></div>' +
+      '<div style="grid-column:1/-1"><small>Validade</small><b>' + (d.validade ? dataBRc(d.validade) : 'Não vence') + '</b></div></div>';
+    if (d.obs) h += '<p class="muted" style="margin:0 0 14px;white-space:pre-wrap">' + esc(d.obs) + '</p>';
+    h += '<div class="acoes">' + botaoLink(d.link, 'Abrir documento no Drive') +
+      '<div class="acoes g2"><button class="btn sec" data-acao="dEditar" data-id="' + id + '">' + ic('edit') + 'Editar</button><button class="btn perigo" data-acao="dExcluir" data-id="' + id + '">' + ic('trash') + 'Excluir</button></div></div>';
+    abrirSheet(h);
+  }
+
+  function vIr() {
+    var I = S.x.ir.slice().sort(function (a, b) { return b.exercicio - a.exercicio || a.declarante.localeCompare(b.declarante); });
+    var anoAtual = +S.x.hoje.slice(0, 4);
+    var h = '';
+    var pend = I.filter(function (x) { return x.exercicio === anoAtual && (x.status === 'Pendente' || x.status === 'Em andamento'); });
+    if (pend.length) h += '<div class="aviso-box">' + ic('alert') + '<span><b>IR ' + anoAtual + ' em aberto:</b> ' + pend.map(function (x) { return esc(x.declarante); }).join(', ') + '</span></div>';
+    if (!I.length) return h + vazio('receipt', 'Nenhuma declaração cadastrada', 'Toque no <b style="display:inline">+</b> para registrar o Imposto de Renda.');
+    var ano = null;
+    I.forEach(function (x) {
+      if (x.exercicio !== ano) { if (ano !== null) h += '</div>'; ano = x.exercicio; h += '<div class="secao"><span>IR ' + ano + ' · ano-base ' + (ano - 1) + '</span></div><div class="lista">'; }
+      var res = x.resultado === 'Restituir' ? '<span class="tag okv">Restituir ' + brl(x.valor) + '</span>' : x.resultado === 'Pagar' ? '<span class="tag atraso">Pagar ' + brl(x.valor) + '</span>' : x.resultado === 'Sem saldo' ? '<span class="tag">Sem saldo</span>' : '';
+      h += '<button class="hab-item" data-acao="iDet" data-id="' + x.id + '" style="width:100%;text-align:left"><span class="hab-ic">🦁</span><div class="corpo"><div class="desc">' + esc(x.declarante) + '</div>' +
+        '<div class="meta"><span class="tag ' + (COR_IR[x.status] || '') + '">' + esc(x.status) + '</span>' + (x.dataEntrega ? '<span>Entregue ' + dataBR(x.dataEntrega) + '</span>' : '') + res + '</div>' +
+        (x.recibo ? '<div class="meta"><span class="num">Recibo ' + esc(x.recibo) + '</span></div>' : '') + '</div>' + ic('right') + '</button>';
+    });
+    return h + '</div>';
+  }
+
+  function abrirIr(id) {
+    var x = S.x.ir.find(function (o) { return o.id === id; }); if (!x) return fecharSheet();
+    var h = '<h2><span>IR ' + x.exercicio + ' · ' + esc(x.declarante) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="ttags" style="margin:-6px 0 14px"><span class="tag ' + (COR_IR[x.status] || '') + '">' + esc(x.status) + '</span><span class="tag">Ano-base ' + x.anoBase + '</span></div>';
+    if (x.recibo) h += '<div class="num-box"><div><small>Número do recibo</small><b class="num">' + esc(x.recibo) + '</b></div><button class="icon-btn" data-acao="iCopiar" data-id="' + id + '" title="Copiar">' + ic('copy') + '</button></div>';
+    h += '<div class="det-grid"><div><small>Entregue em</small><b>' + (x.dataEntrega ? dataBRc(x.dataEntrega) : '—') + '</b></div><div><small>Resultado</small><b>' +
+      (x.resultado === 'Restituir' || x.resultado === 'Pagar' ? x.resultado + ' ' + brl(x.valor) : (x.resultado || '—')) + '</b></div></div>';
+    if (x.obs) h += '<p class="muted" style="margin:0 0 14px;white-space:pre-wrap">' + esc(x.obs) + '</p>';
+    h += '<div class="acoes">' + botaoLink(x.linkRecibo, 'Abrir recibo') + botaoLink(x.linkDeclaracao, 'Abrir declaração') +
+      '<div class="acoes g2"><button class="btn sec" data-acao="iEditar" data-id="' + id + '">' + ic('edit') + 'Editar</button><button class="btn perigo" data-acao="iExcluir" data-id="' + id + '">' + ic('trash') + 'Excluir</button></div></div>';
+    abrirSheet(h);
+  }
+
+  /* ----- formulários ----- */
+  var FD = null, FI = null;
+  function datalistTit() { return '<datalist id="dlTit">' + titulares().map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>'; }
+  function formDoc(id) {
+    var d = id ? S.x.docs.find(function (o) { return o.id === id; }) : null;
+    FD = d ? { id: d.id, tipo: d.tipo, titular: d.titular, numero: d.numero, orgao: d.orgao, emissao: d.emissao, validade: d.validade, semValidade: !d.validade, link: d.link, obs: d.obs }
+      : { id: '', tipo: 'RG', titular: S.titF || (titulares()[0] || ''), numero: '', orgao: '', emissao: '', validade: '', semValidade: false, link: '', obs: '' };
+    renderFormDoc();
+  }
+  function lerFD() {
+    if (!FD) return;
+    ['titular', 'numero', 'orgao', 'emissao', 'validade', 'link', 'obs'].forEach(function (k) { var e = document.getElementById('fd_' + k); if (e) FD[k] = e.value; });
+  }
+  function renderFormDoc() {
+    var f = FD;
+    var h = '<h2><span>' + (f.id ? 'Editar documento' : 'Novo documento') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="campo"><span>Tipo</span><div class="tipos-doc">' + S.x.tipos.map(function (t) { return '<button class="' + (f.tipo === t ? 'sel' : '') + '" data-acao="fdTipo" data-v="' + esc(t) + '">' + (EMO_DOC[t] || '📄') + '<span>' + esc(t) + '</span></button>'; }).join('') + '</div></div>';
+    h += '<label class="campo"><span>Titular</span><input id="fd_titular" list="dlTit" maxlength="60" value="' + esc(f.titular) + '" placeholder="Ex.: Higor, Pai, Isis" autocomplete="off">' + datalistTit() + '</label>';
+    h += '<div class="duas"><label class="campo"><span>Número</span><input id="fd_numero" maxlength="40" value="' + esc(f.numero) + '" autocomplete="off" inputmode="text"></label>' +
+      '<label class="campo"><span>Órgão emissor</span><input id="fd_orgao" maxlength="40" value="' + esc(f.orgao) + '" placeholder="Ex.: SSP/SP" autocomplete="off"></label></div>';
+    h += '<div class="duas"><label class="campo"><span>Emissão</span><input type="date" id="fd_emissao" value="' + esc(f.emissao) + '"></label>' +
+      '<label class="campo"><span>Validade</span><input type="date" id="fd_validade" value="' + esc(f.validade) + '"' + (f.semValidade ? ' disabled' : '') + '></label></div>';
+    h += '<button class="toggle-linha" data-acao="fdSemVal" style="width:100%;text-align:left"><span><b>Não vence</b><small>Ex.: CPF, certidão de nascimento</small></span><span class="sw' + (f.semValidade ? ' on' : '') + '"></span></button>';
+    h += '<label class="campo"><span>Link do Drive (opcional)</span><input id="fd_link" type="url" inputmode="url" maxlength="500" value="' + esc(f.link) + '" placeholder="https://drive.google.com/…" autocomplete="off"></label>';
+    h += '<label class="campo"><span>Observação (opcional)</span><textarea id="fd_obs" maxlength="1000" rows="2">' + esc(f.obs) + '</textarea></label>';
+    h += '<p class="muted" style="font-size:12px;margin:-4px 0 12px">O número aparece mascarado no app. Avisos por e-mail chegam 90, 30 e 7 dias antes da validade.</p>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fdSalvar" id="fdSalvar">' + ic('check') + (f.id ? 'Salvar alterações' : 'Cadastrar documento') + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFD() {
+    lerFD();
+    var f = FD;
+    if (!f.titular.trim()) return toast('Informe o titular', true);
+    if (f.link && !/^https:\/\//i.test(f.link.trim())) return toast('O link precisa começar com https://', true);
+    var b = $('#fdSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    mutar('docSalvar', { id: f.id, tipo: f.tipo, titular: f.titular.trim(), numero: f.numero, orgao: f.orgao, emissao: f.emissao, validade: f.semValidade ? '' : f.validade, link: f.link.trim(), obs: f.obs })
+      .then(function () { var novo = !f.id; fecharSheet(); FD = null; toast(novo ? 'Documento cadastrado' : 'Documento atualizado'); }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+
+  function formIr(id) {
+    var x = id ? S.x.ir.find(function (o) { return o.id === id; }) : null;
+    var ano = +S.x.hoje.slice(0, 4);
+    FI = x ? { id: x.id, exercicio: x.exercicio, declarante: x.declarante, status: x.status, dataEntrega: x.dataEntrega, recibo: x.recibo, resultado: x.resultado, cents: Math.round(x.valor * 100), linkRecibo: x.linkRecibo, linkDeclaracao: x.linkDeclaracao, obs: x.obs }
+      : { id: '', exercicio: ano, declarante: S.titF || (titulares()[0] || ''), status: 'Pendente', dataEntrega: '', recibo: '', resultado: '', cents: 0, linkRecibo: '', linkDeclaracao: '', obs: '' };
+    renderFormIr();
+  }
+  function lerFI() {
+    if (!FI) return;
+    ['declarante', 'dataEntrega', 'recibo', 'linkRecibo', 'linkDeclaracao', 'obs'].forEach(function (k) { var e = document.getElementById('fi_' + k); if (e) FI[k] = e.value; });
+    var ex = document.getElementById('fi_exercicio'); if (ex) FI.exercicio = parseInt(ex.value, 10) || FI.exercicio;
+  }
+  function renderFormIr() {
+    var f = FI;
+    var h = '<h2><span>' + (f.id ? 'Editar declaração' : 'Nova declaração de IR') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="duas"><label class="campo"><span>Exercício (ano da entrega)</span><div class="stepper"><button data-acao="fiAno" data-n="-1">−</button><input id="fi_exercicio" inputmode="numeric" value="' + f.exercicio + '"><button data-acao="fiAno" data-n="1">+</button></div></label>' +
+      '<label class="campo"><span>De quem é</span><input id="fi_declarante" list="dlTit" maxlength="60" value="' + esc(f.declarante) + '" placeholder="Ex.: Higor" autocomplete="off">' + datalistTit() + '</label></div>';
+    h += '<p class="muted" style="font-size:13px;margin:-8px 0 12px">Ano-base (rendimentos de): <b>' + (f.exercicio - 1) + '</b></p>';
+    h += '<label class="campo" style="margin-bottom:6px"><span>Status</span></label><div class="seg st-ir">' + S.x.statusIr.map(function (s) { return '<button data-acao="fiStatus" data-v="' + esc(s) + '" class="' + (f.status === s ? 'ativo' : '') + '">' + esc(s) + '</button>'; }).join('') + '</div>';
+    h += '<div class="duas"><label class="campo"><span>Data de entrega</span><input type="date" id="fi_dataEntrega" value="' + esc(f.dataEntrega) + '"></label>' +
+      '<label class="campo"><span>Número do recibo</span><input id="fi_recibo" maxlength="40" value="' + esc(f.recibo) + '" inputmode="numeric" autocomplete="off"></label></div>';
+    h += '<label class="campo" style="margin-bottom:6px"><span>Resultado</span></label><div class="seg">' + [['', '—'], ['Restituir', 'Restituir'], ['Pagar', 'Pagar'], ['Sem saldo', 'Sem saldo']].map(function (r) { return '<button data-acao="fiRes" data-v="' + r[0] + '" class="' + (f.resultado === r[0] ? 'ativo' : '') + '">' + r[1] + '</button>'; }).join('') + '</div>';
+    if (f.resultado === 'Restituir' || f.resultado === 'Pagar') h += '<label class="campo"><span>Valor ' + (f.resultado === 'Restituir' ? 'a restituir' : 'a pagar') + '</span><input class="valor-in num" id="fiValor" inputmode="numeric" autocomplete="off" value="' + (f.cents ? NUM.format(f.cents / 100) : '') + '" placeholder="0,00"></label>';
+    h += '<label class="campo"><span>Link do recibo (Drive)</span><input id="fi_linkRecibo" type="url" inputmode="url" maxlength="500" value="' + esc(f.linkRecibo) + '" placeholder="https://drive.google.com/…" autocomplete="off"></label>';
+    h += '<label class="campo"><span>Link da declaração (Drive)</span><input id="fi_linkDeclaracao" type="url" inputmode="url" maxlength="500" value="' + esc(f.linkDeclaracao) + '" placeholder="https://drive.google.com/…" autocomplete="off"></label>';
+    h += '<label class="campo"><span>Observação (opcional)</span><textarea id="fi_obs" maxlength="1000" rows="2">' + esc(f.obs) + '</textarea></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fiSalvar" id="fiSalvar">' + ic('check') + (f.id ? 'Salvar alterações' : 'Registrar declaração') + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFI() {
+    lerFI();
+    var f = FI;
+    if (!f.declarante.trim()) return toast('Informe de quem é a declaração', true);
+    if ([f.linkRecibo, f.linkDeclaracao].some(function (l) { return l && !/^https:\/\//i.test(l.trim()); })) return toast('Os links precisam começar com https://', true);
+    var b = $('#fiSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    mutar('irSalvar', { id: f.id, exercicio: f.exercicio, declarante: f.declarante.trim(), status: f.status, dataEntrega: f.dataEntrega, recibo: f.recibo, resultado: f.resultado, valor: f.cents / 100, linkRecibo: f.linkRecibo.trim(), linkDeclaracao: f.linkDeclaracao.trim(), obs: f.obs })
+      .then(function () { var novo = !f.id; fecharSheet(); FI = null; toast(novo ? 'Declaração registrada' : 'Declaração atualizada'); }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+  function confirmarExcluirX(acao, id, titulo) {
+    abrirSheet('<h2><span>Excluir?</span></h2><p class="muted" style="margin-top:-6px">' + esc(titulo) + '</p><p class="muted" style="font-size:14px">O arquivo no Drive não é apagado — só o registro aqui.</p><div class="acoes">' +
+      '<button class="btn perigo" data-acao="xExcluirOk" data-v="' + acao + '" data-id="' + id + '">' + ic('trash') + 'Excluir</button>' +
+      '<button class="btn sec" data-acao="fechar">Cancelar</button></div>');
+  }
+
   /* ================= eventos ================= */
   document.addEventListener('click', function (ev) {
     var pk = ev.target.closest('[data-pin]');
@@ -1639,6 +1864,29 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       case 'ftTagAdd': lerFT(); addTagFT(el.getAttribute('data-v')); renderFormTarefa(); break;
       case 'ftTagDel': lerFT(); FT.tags.splice(+el.getAttribute('data-i'), 1); renderFormTarefa(); break;
       case 'ftSalvar': salvarFT(); break;
+      // documentos
+      case 'dView': S.dview = id; store('cm_dview', id); render(); window.scrollTo(0, 0); break;
+      case 'dTit': S.titF = id; render(); break;
+      case 'dDet': abrirDoc(id); break;
+      case 'dRevelar': S.revelar[id] = !S.revelar[id]; abrirDoc(id); break;
+      case 'dCopiar': copiar(S.x.docs.find(function (o) { return o.id === id; }).numero, 'Número copiado'); break;
+      case 'dEditar': formDoc(id); break;
+      case 'dExcluir': var dx = S.x.docs.find(function (o) { return o.id === id; }); confirmarExcluirX('docExcluir', id, dx.tipo + ' · ' + dx.titular); break;
+      case 'iDet': abrirIr(id); break;
+      case 'iCopiar': copiar(S.x.ir.find(function (o) { return o.id === id; }).recibo, 'Recibo copiado'); break;
+      case 'iEditar': formIr(id); break;
+      case 'iExcluir': var ix = S.x.ir.find(function (o) { return o.id === id; }); confirmarExcluirX('irExcluir', id, 'IR ' + ix.exercicio + ' · ' + ix.declarante); break;
+      case 'xExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar(el.getAttribute('data-v'), { id: id }).then(function () { fecharSheet(); toast('Excluído'); }, function () {});
+        break;
+      case 'fdTipo': lerFD(); FD.tipo = el.getAttribute('data-v'); if (!FD.id && !FD.validade) FD.semValidade = FD.tipo === 'CPF' || FD.tipo === 'Certidão'; renderFormDoc(); break;
+      case 'fdSemVal': lerFD(); FD.semValidade = !FD.semValidade; renderFormDoc(); break;
+      case 'fdSalvar': salvarFD(); break;
+      case 'fiAno': lerFI(); FI.exercicio = Math.min(2100, Math.max(2000, FI.exercicio + (+el.getAttribute('data-n')))); renderFormIr(); break;
+      case 'fiStatus': lerFI(); FI.status = el.getAttribute('data-v'); renderFormIr(); break;
+      case 'fiRes': lerFI(); FI.resultado = el.getAttribute('data-v'); renderFormIr(); break;
+      case 'fiSalvar': salvarFI(); break;
       // hábitos
       case 'hView': S.hview = id; store('cm_hview', id); render(); window.scrollTo(0, 0); break;
       case 'hDia': S.hdia = id; render(); break;
@@ -1687,6 +1935,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   $('#fab').addEventListener('click', function () {
     if (S.modulo === 'tar') { if (S.t) formTarefa(); }
     else if (S.modulo === 'hab') { if (S.h) formHabito(); }
+    else if (S.modulo === 'doc') { if (S.x) { if (S.dview === 'ir') formIr(); else formDoc(); } }
     else if (S.d) novoForm();
   });
 
@@ -1697,6 +1946,10 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       FORM.cents = +dig || 0;
       t.value = FORM.cents ? NUM.format(FORM.cents / 100) : '';
       if ($('#fParcInfo')) $('#fParcInfo').innerHTML = infoParcelas();
+    } else if (t.id === 'fiValor') {
+      var dg = t.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11);
+      FI.cents = +dg || 0;
+      t.value = FI.cents ? NUM.format(FI.cents / 100) : '';
     } else if (t.id === 'fParc' || t.id === 'fTot' || t.id === 'fVenc') {
       lerForm(); if ($('#fParcInfo')) $('#fParcInfo').innerHTML = infoParcelas();
     }
