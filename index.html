@@ -422,6 +422,23 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 .card-prev { min-height: 150px; margin-bottom: 12px; }
 .pers-thumb { width: 52px; height: 52px; flex: none; border-radius: 14px; background-size: cover; background-position: center; font-size: 24px; display: grid; place-items: center; }
 
+/* ---------- compras ---------- */
+.cot { border: 1.5px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; background: var(--surface); }
+.cot.escolhida { border-color: var(--green); background: var(--green-soft); }
+.cot-topo { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cot-topo b { flex: 1; min-width: 0; }
+.cot-val { font-size: 20px; font-weight: 800; margin: 4px 0 2px; }
+.cot-val small { font-size: 13px; font-weight: 500; }
+.cot .meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.cot-acoes { display: flex; gap: 6px; margin-top: 8px; }
+.cot-acoes .chip { text-decoration: none; color: var(--text); }
+.cot-opcao { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--surface); }
+.cot-opcao.sel { border-color: var(--green); background: var(--green-soft); }
+.cot-opcao .cx { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; color: transparent; }
+.cot-opcao .cx svg { width: 14px; height: 14px; stroke-width: 3; }
+.cot-opcao.sel .cx { background: var(--green); border-color: var(--green); color: var(--on-accent); }
+.cot-opcao .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
 /* ---------- metas ---------- */
 .meta-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border-radius: var(--radius); padding: 14px 12px; box-shadow: var(--shadow); }
 .meta-item .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -579,6 +596,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
     target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
     minus: '<path d="M5 12h14"/>',
+    cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/>',
+    box: '<path d="M21 8l-9-5-9 5 9 5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
@@ -608,7 +627,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     h: null, hview: store('cm_hview') || 'hoje', hdia: null,
     x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {},
     pessoa: 'Higor', // ao abrir, sempre só os lançamentos do Higor
-    m: null, mview: store('cm_mview') || 'metas', metPes: 'Higor' };
+    m: null, mview: store('cm_mview') || 'metas', metPes: 'Higor',
+    k: null, kview: store('cm_kview') || 'Cotando', kLista: '' };
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -620,7 +640,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     { id: 'tar', nome: 'Tarefas', ic: 'kanban' },
     { id: 'hab', nome: 'Hábitos', ic: 'flame' },
     { id: 'doc', nome: 'Documentos', ic: 'idcard' },
-    { id: 'met', nome: 'Metas', ic: 'target' }
+    { id: 'met', nome: 'Metas', ic: 'target' },
+    { id: 'cmp', nome: 'Compras', ic: 'cart' }
   ];
 
   /* ================= servidor ================= */
@@ -663,7 +684,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
-    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : 'd');
+    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : /^(compra|cotacao)[A-Z]/.test(acao) ? 'k' : 'd');
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
@@ -747,10 +768,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met'].filter(function (m) { return m !== S.modulo; }));
+    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met', 'cmp'].filter(function (m) { return m !== S.modulo; }));
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'] };
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     return api(c[0]).then(function (d) {
@@ -810,6 +831,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (S.modulo === 'hab') { if (S.h) renderHab(); return; }
     if (S.modulo === 'doc') { if (S.x) renderDoc(); return; }
     if (S.modulo === 'met') { if (S.m) renderMet(); return; }
+    if (S.modulo === 'cmp') { if (S.k) renderCmp(); return; }
     if (!S.d) return;
     var vencidos = lancs().filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
@@ -1727,9 +1749,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     tar: { nome: 'Tarefas', descricao: 'Kanban com checklists, tags e prazos', emoji: '📋', cor: '#2563eb' },
     hab: { nome: 'Hábitos', descricao: 'Check-in diário e sequências', emoji: '🔥', cor: '#ea580c' },
     doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' },
-    met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' }
+    met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' },
+    cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' }
   };
-  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met'];
+  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met', 'cmp'];
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -1785,6 +1808,12 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       if (m === 'hab' && S.h) {
         var A = ativos().filter(function (x) { return agendado(x, S.h.hoje); }), ok = A.filter(function (x) { return feito(x, S.h.hoje); }).length;
         return A.length ? { txt: ok + '/' + A.length + ' hábitos hoje' + (ok === A.length ? ' 🎉' : '') } : { txt: 'Folga hoje' };
+      }
+      if (m === 'cmp' && S.k) {
+        var cot = S.k.compras.filter(function (x) { return x.status === 'Cotando'; }), apr = S.k.compras.filter(function (x) { return x.status === 'Aprovado'; });
+        if (!S.k.compras.length) return { txt: 'Lance o que pretende comprar' };
+        var emAnalise = cot.reduce(function (s, x) { var b = melhorCot(x.id); return s + (b ? totalCot(b) : 0); }, 0);
+        return { txt: cot.length + ' cotando · ' + apr.length + ' aprovado(s)' + (emAnalise ? ' · ' + brl(emAnalise) + ' em análise' : '') };
       }
       if (m === 'met' && S.m) {
         var at = S.m.metas.filter(function (x) { return x.status === 'Ativa'; });
@@ -2096,6 +2125,261 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   // A movimentação pode ter criado/apagado lançamento: recarrega o Financeiro em segundo plano.
   function atualizarFinanceiroDepois() { api('carregar').then(function (d) { S.d = d; if (S.modulo === 'fin' || S.modulo === 'home') render(); }, function () {}); }
 
+  /* ================= COMPRAS ================= */
+  var KVIEWS = [{ id: 'Cotando', nome: 'Cotando', ic: 'cart' }, { id: 'Aprovado', nome: 'Aprovados', ic: 'check' }, { id: 'Final', nome: 'Finalizados', ic: 'box' }];
+  function totalCot(q) { return Math.round((q.valor + q.frete) * 100) / 100; }
+  function cotsDe(id) { return S.k.cotacoes.filter(function (q) { return q.compraId === id; }).sort(function (a, b) { return totalCot(a) - totalCot(b); }); }
+  function melhorCot(id) { return cotsDe(id)[0] || null; }
+  function listasCompra() {
+    var c = {}; S.k.compras.forEach(function (x) { if (x.lista) c[x.lista] = (c[x.lista] || 0) + 1; });
+    return Object.keys(c).sort(function (a, b) { return c[b] - c[a] || a.localeCompare(b); });
+  }
+  function pagTxt(q) { return q.pagamento === 'Parcelado' ? q.parcelas + 'x de ' + brl(totalCot(q) / q.parcelas) : 'à vista'; }
+  /** Resumo do destino; para meta, mostra o progresso atual. */
+  function destinoTxt(x) {
+    var ref = x.destinoRef || '';
+    if (ref.indexOf('met:') === 0 && S.m) {
+      var mt = S.m.metas.find(function (o) { return o.id === ref.split(':')[1]; });
+      if (mt) return '🎯 ' + mt.nome + ' · ' + ritmoMeta(mt).pct.toFixed(0) + '%';
+    }
+    return x.destinoResumo || '';
+  }
+
+  function renderCmp() {
+    var cont = { Cotando: 0, Aprovado: 0, Final: 0 };
+    S.k.compras.forEach(function (x) { cont[x.status === 'Comprado' || x.status === 'Recusado' ? 'Final' : x.status]++; });
+    var nav = KVIEWS.map(function (v) {
+      return '<button class="' + (S.kview === v.id ? 'ativo' : '') + '" data-acao="kView" data-id="' + v.id + '">' + ic(v.ic) + '<span>' + v.nome + '</span>' +
+        (cont[v.id] && v.id !== 'Final' ? '<span class="badge neutro">' + cont[v.id] + '</span>' : '') + '</button>';
+    }).join('');
+    $('#bottomNav').style.gridTemplateColumns = 'repeat(3, 1fr)';
+    $('#bottomNav').innerHTML = nav;
+    $('#subnav').innerHTML = nav; $('#subnav').hidden = false;
+    $('#view').innerHTML = vCompras();
+  }
+  function vCompras() {
+    if (!S.k.compras.length) return vazio('cart', 'Nada em cotação', 'Toque no <b style="display:inline">+</b> para lançar o que pretende comprar e registrar os orçamentos.');
+    var Ls = listasCompra(), h = '';
+    if (Ls.length) h += '<div class="chips"><button class="chip' + (!S.kLista ? ' ativo' : '') + '" data-acao="kLista" data-id="">Todas</button>' +
+      Ls.map(function (l) { return '<button class="chip' + (S.kLista === l ? ' ativo' : '') + '" data-acao="kLista" data-id="' + esc(l) + '">' + esc(l) + '</button>'; }).join('') + '</div>';
+    var noFiltro = S.k.compras.filter(function (x) { return !S.kLista || x.lista === S.kLista; });
+    var item = function (x) { return compraItem(x); };
+    if (S.kview === 'Final') {
+      var cp = noFiltro.filter(function (x) { return x.status === 'Comprado'; }).sort(function (a, b) { return (b.compradoEm || '').localeCompare(a.compradoEm || ''); });
+      var rc = noFiltro.filter(function (x) { return x.status === 'Recusado'; });
+      if (!cp.length && !rc.length) return h + vazio('box', 'Nada finalizado ainda', 'Itens comprados ou recusados aparecem aqui.');
+      return h + (cp.length ? '<div class="secao"><span>📦 Comprados</span><span>' + cp.length + '</span></div><div class="lista">' + cp.map(item).join('') + '</div>' : '') +
+        (rc.length ? '<div class="secao"><span>❌ Recusados</span><span>' + rc.length + '</span></div><div class="lista">' + rc.map(item).join('') + '</div>' : '');
+    }
+    var L = noFiltro.filter(function (x) { return x.status === S.kview; }).sort(function (a, b) { return (b.criadoEm || '').localeCompare(a.criadoEm || ''); });
+    if (!L.length) return h + vazio(S.kview === 'Cotando' ? 'cart' : 'check', S.kview === 'Cotando' ? 'Nada em cotação' : 'Nenhum item aprovado', S.kview === 'Cotando' ? 'Toque no <b style="display:inline">+</b> para lançar um item.' : 'Aprove uma cotação para ela aparecer aqui.');
+    if (S.kview === 'Cotando') {
+      var soma0 = L.reduce(function (s, x) { var b = melhorCot(x.id); return s + (b ? totalCot(b) : 0); }, 0);
+      if (soma0) h += '<div class="saldo"><div class="linha"><span class="muted">Em análise (melhores cotações)</span><span class="v num">' + brl(soma0) + '</span></div></div>';
+    }
+    return h + '<div class="lista">' + L.map(item).join('') + '</div>';
+  }
+  function compraItem(x) {
+    var Q = cotsDe(x.id), b = Q[0], esc0 = x.cotacaoId ? S.k.cotacoes.find(function (q) { return q.id === x.cotacaoId; }) : null;
+    var meta = [];
+    if (x.quantidade > 1) meta.push('<span>' + x.quantidade + ' un.</span>');
+    if (x.lista && !S.kLista) meta.push('<span class="tag">' + esc(x.lista) + '</span>');
+    if (x.titular !== padraoPessoa()) meta.push('<span class="tag pessoa">' + esc(x.titular) + '</span>');
+    if (x.status === 'Cotando') meta.push(Q.length ? '<span>' + Q.length + ' cotação(ões)</span>' : '<span class="tag hoje">Sem cotação</span>');
+    if (x.status === 'Aprovado' || x.status === 'Comprado') meta.push('<span class="tag okv">' + esc(destinoTxt(x)) + '</span>');
+    if (x.status === 'Comprado' && x.compradoEm) meta.push('<span>Comprado ' + dataBR(x.compradoEm) + '</span>');
+    var valor = esc0 ? totalCot(esc0) : b ? totalCot(b) : 0;
+    return '<button class="hab-item" data-acao="kDet" data-id="' + x.id + '" style="width:100%;text-align:left' + (x.status === 'Recusado' ? ';opacity:.6' : '') + '"><span class="hab-ic">' + (x.status === 'Comprado' ? '📦' : x.status === 'Recusado' ? '❌' : x.status === 'Aprovado' ? '✅' : '🛒') + '</span>' +
+      '<div class="corpo"><div class="desc">' + esc(x.nome) + '</div><div class="meta">' + meta.join('') + '</div></div>' +
+      (valor ? '<div style="text-align:right"><b class="num">' + brl(valor) + '</b><br><small class="muted">' + esc(esc0 ? esc0.fornecedor : '🏆 ' + b.fornecedor) + '</small></div>' : '') + '</button>';
+  }
+
+  function abrirCompra(id) {
+    var x = S.k.compras.find(function (o) { return o.id === id; }); if (!x) return fecharSheet();
+    var Q = cotsDe(id), bestId = Q[0] && Q[0].id;
+    var h = '<h2><span>' + esc(x.nome) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    var stTag = { Cotando: '<span class="tag hoje">🔍 Cotando</span>', Aprovado: '<span class="tag okv">✅ Aprovado</span>', Comprado: '<span class="tag okv">📦 Comprado' + (x.compradoEm ? ' em ' + dataBR(x.compradoEm) : '') + '</span>', Recusado: '<span class="tag atraso">❌ Recusado</span>' }[x.status];
+    h += '<div class="ttags" style="margin:-6px 0 12px">' + stTag + (x.quantidade > 1 ? '<span class="tag">' + x.quantidade + ' un.</span>' : '') + (x.lista ? '<span class="tag">' + esc(x.lista) + '</span>' : '') + '<span class="tag pessoa">' + esc(x.titular) + '</span></div>';
+    if (x.descricao) h += '<p style="margin:0 0 14px;white-space:pre-wrap">' + esc(x.descricao) + '</p>';
+    if (x.status === 'Aprovado' || x.status === 'Comprado') h += '<div class="num-box"><div><small>Destino</small><b style="font-size:16px;letter-spacing:0">' + esc(destinoTxt(x)) + '</b></div></div>';
+
+    h += '<div class="secao"><span>Cotações</span><span>' + Q.length + '</span></div>';
+    if (!Q.length) h += '<p class="muted" style="margin:0 0 12px">Nenhuma cotação ainda. Adicione os orçamentos para comparar.</p>';
+    Q.forEach(function (q) {
+      var escolhida = x.cotacaoId === q.id;
+      h += '<div class="cot' + (escolhida ? ' escolhida' : '') + '"><div class="cot-topo"><b>' + esc(q.fornecedor) + '</b>' + (q.id === bestId && Q.length > 1 ? '<span class="tag okv">🏆 mais barata</span>' : '') + (escolhida ? '<span class="tag pessoa">✓ aprovada</span>' : '') + '</div>' +
+        '<div class="cot-val num">' + brl(totalCot(q)) + '<small class="muted"> ' + esc(pagTxt(q)) + '</small></div>' +
+        '<div class="meta">' + (q.frete ? '<span>Produto ' + brl(q.valor) + ' + frete ' + brl(q.frete) + '</span>' : '<span>Frete grátis/sem frete</span>') + (q.entrega ? '<span>Entrega: ' + esc(q.entrega) + '</span>' : '') + (q.obs ? '<span>' + esc(q.obs) + '</span>' : '') + '</div>' +
+        '<div class="cot-acoes">' + (q.link ? '<a class="chip leve" href="' + esc(q.link) + '" target="_blank" rel="noopener">' + ic('ext') + '<span style="margin-left:4px">Abrir</span></a>' : '') +
+        (x.status === 'Cotando' ? '<button class="chip leve" data-acao="cvEditar" data-id="' + q.id + '">' + ic('edit') + '</button><button class="chip leve" data-acao="cvExcluir" data-id="' + q.id + '">' + ic('trash') + '</button>' : '') + '</div></div>';
+    });
+    h += '<div class="acoes">';
+    if (x.status === 'Cotando') {
+      h += '<button class="btn sec" data-acao="cvNova" data-id="' + id + '">' + ic('plus') + 'Adicionar cotação</button>';
+      if (Q.length) h += '<button class="btn ok" data-acao="kAprovar" data-id="' + id + '">' + ic('check') + 'Aprovar compra</button>';
+      h += '<div class="acoes g2"><button class="btn sec" data-acao="kEditar" data-id="' + id + '">' + ic('edit') + 'Editar</button><button class="btn sec" data-acao="kSt" data-id="' + id + '" data-v="Recusado">❌ Recusar</button></div>';
+    } else if (x.status === 'Aprovado') {
+      h += '<button class="btn ok" data-acao="kSt" data-id="' + id + '" data-v="Comprado">' + ic('box') + 'Marcar como comprado</button>';
+      h += '<button class="btn sec" data-acao="kDesaprovar" data-id="' + id + '">' + ic('undo') + 'Desfazer aprovação</button>';
+    } else if (x.status === 'Comprado') {
+      h += '<button class="btn sec" data-acao="kSt" data-id="' + id + '" data-v="Aprovado">' + ic('undo') + 'Voltar para aprovado</button>';
+    } else {
+      h += '<button class="btn sec" data-acao="kSt" data-id="' + id + '" data-v="Cotando">' + ic('undo') + 'Voltar a cotar</button>';
+    }
+    if (x.status !== 'Aprovado') h += '<button class="btn perigo" data-acao="kExcluir" data-id="' + id + '">' + ic('trash') + 'Excluir item</button>';
+    abrirSheet(h + '</div>');
+  }
+
+  /* ----- formulários ----- */
+  var FK = null, FQ = null, FA = null;
+  function formCompra(id) {
+    var x = id ? S.k.compras.find(function (o) { return o.id === id; }) : null;
+    FK = x ? { id: x.id, nome: x.nome, descricao: x.descricao, quantidade: x.quantidade, lista: x.lista, titular: x.titular }
+      : { id: '', nome: '', descricao: '', quantidade: 1, lista: S.kLista || '', titular: padraoPessoa() };
+    renderFormCompra();
+    if (!id) setTimeout(function () { var e = $('#fkNome'); if (e) e.focus(); }, 250);
+  }
+  function lerFK() {
+    if (!FK) return;
+    var g = function (i) { var e = document.getElementById(i); return e ? e.value : null; };
+    if (g('fkNome') !== null) FK.nome = g('fkNome');
+    if (g('fkDesc') !== null) FK.descricao = g('fkDesc');
+    if (g('fkLista') !== null) FK.lista = g('fkLista');
+    if (g('fkQtd') !== null) FK.quantidade = Math.max(1, parseInt(g('fkQtd'), 10) || 1);
+    var t = g('fkTitularNovo'); if (t && t.trim()) FK.titular = t.replace(/\s+/g, ' ').trim();
+  }
+  function renderFormCompra() {
+    var f = FK;
+    var P = (S.d ? pessoas() : [padraoPessoa()]).slice(); if (P.indexOf(f.titular) < 0) P.push(f.titular);
+    var h = '<h2><span>' + (f.id ? 'Editar item' : 'Novo item de compra') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<label class="campo"><span>O que vai comprar</span><input id="fkNome" maxlength="80" value="' + esc(f.nome) + '" placeholder="Ex.: Notebook, Geladeira, Kit ferramentas" autocomplete="off"></label>';
+    h += '<div class="duas"><label class="campo"><span>Quantidade</span><div class="stepper"><button data-acao="fkQtdStep" data-n="-1">−</button><input id="fkQtd" inputmode="numeric" value="' + f.quantidade + '"><button data-acao="fkQtdStep" data-n="1">+</button></div></label>' +
+      '<label class="campo"><span>Lista (opcional)</span><input id="fkLista" list="dlListas" maxlength="40" value="' + esc(f.lista) + '" placeholder="Ex.: Casa" autocomplete="off"><datalist id="dlListas">' + listasCompra().map(function (l) { return '<option value="' + esc(l) + '">'; }).join('') + '</datalist></label></div>';
+    h += '<div class="campo"><span>De quem</span><div class="chips quem">' + P.map(function (p) { return '<button class="chip' + (f.titular === p ? ' ativo' : '') + '" data-acao="fkTitular" data-v="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>' +
+      '<input id="fkTitularNovo" maxlength="40" placeholder="Outra pessoa ou empresa (opcional)" autocomplete="off" style="margin-top:8px"></div>';
+    h += '<label class="campo"><span>Descrição (opcional)</span><textarea id="fkDesc" maxlength="1000" rows="2" placeholder="Modelo, especificações, para que é…">' + esc(f.descricao) + '</textarea></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fkSalvar" id="fkSalvar">' + ic('check') + (f.id ? 'Salvar alterações' : 'Lançar item') + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFK() {
+    lerFK();
+    var f = FK;
+    if (!f.nome.trim()) return toast('Informe o que vai comprar', true);
+    var b = $('#fkSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    mutar('compraSalvar', { id: f.id, nome: f.nome.trim(), descricao: f.descricao, quantidade: f.quantidade, lista: f.lista, titular: f.titular }).then(function (d) {
+      var novo = !f.id; FK = null;
+      if (novo) {
+        var x = d.compras.slice().sort(function (a, b2) { return (b2.criadoEm || '').localeCompare(a.criadoEm || ''); })[0];
+        S.kview = 'Cotando'; render(); formCotacao(x.id); toast('Item lançado — agora adicione a primeira cotação');
+      } else { abrirCompra(f.id); toast('Item atualizado'); }
+    }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+
+  function formCotacao(compraId, cotId) {
+    var q = cotId ? S.k.cotacoes.find(function (o) { return o.id === cotId; }) : null;
+    FQ = q ? { id: q.id, compraId: q.compraId, fornecedor: q.fornecedor, cents: Math.round(q.valor * 100), frete: Math.round(q.frete * 100), pagamento: q.pagamento, parcelas: q.parcelas, entrega: q.entrega, link: q.link, obs: q.obs }
+      : { id: '', compraId: compraId, fornecedor: '', cents: 0, frete: 0, pagamento: 'À vista', parcelas: 2, entrega: '', link: '', obs: '' };
+    renderFormCotacao();
+    if (!cotId) setTimeout(function () { var e = $('#cvForn'); if (e) e.focus(); }, 250);
+  }
+  function lerFQ() {
+    if (!FQ) return;
+    var g = function (i) { var e = document.getElementById(i); return e ? e.value : null; };
+    if (g('cvForn') !== null) FQ.fornecedor = g('cvForn');
+    if (g('cvEntrega') !== null) FQ.entrega = g('cvEntrega');
+    if (g('cvLink') !== null) FQ.link = g('cvLink');
+    if (g('cvObs') !== null) FQ.obs = g('cvObs');
+    if (g('cvParc') !== null) FQ.parcelas = Math.max(2, Math.min(48, parseInt(g('cvParc'), 10) || 2));
+  }
+  function renderFormCotacao() {
+    var f = FQ, x = S.k.compras.find(function (o) { return o.id === f.compraId; });
+    var fornecedores = {}; S.k.cotacoes.forEach(function (q) { fornecedores[q.fornecedor] = 1; });
+    var h = '<h2><span>' + (f.id ? 'Editar cotação' : 'Nova cotação') + '</span><button class="icon-btn" data-acao="kDet" data-id="' + f.compraId + '">' + ic('x') + '</button></h2>';
+    h += '<p class="muted" style="margin:-8px 0 12px">' + esc(x.nome) + (x.quantidade > 1 ? ' · ' + x.quantidade + ' un.' : '') + '</p>';
+    h += '<label class="campo"><span>Loja / fornecedor</span><input id="cvForn" list="dlForn" maxlength="60" value="' + esc(f.fornecedor) + '" placeholder="Ex.: Mercado Livre, Magalu, Loja X" autocomplete="off"><datalist id="dlForn">' + Object.keys(fornecedores).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></label>';
+    h += '<div class="duas"><label class="campo"><span>Valor ' + (x.quantidade > 1 ? '(total)' : '') + '</span><input class="num" id="cvValor" inputmode="numeric" autocomplete="off" value="' + (f.cents ? NUM.format(f.cents / 100) : '') + '" placeholder="0,00" style="font-weight:700"></label>' +
+      '<label class="campo"><span>Frete</span><input class="num" id="cvFrete" inputmode="numeric" autocomplete="off" value="' + (f.frete ? NUM.format(f.frete / 100) : '') + '" placeholder="0,00"></label></div>';
+    h += '<p class="muted num" id="cvTotal" style="margin:-6px 0 12px;font-size:14px">Total: <b>' + brl((f.cents + f.frete) / 100) + '</b></p>';
+    h += '<label class="campo" style="margin-bottom:6px"><span>Pagamento</span></label><div class="seg">' + ['À vista', 'Parcelado'].map(function (p) { return '<button data-acao="cvPag" data-v="' + p + '" class="' + (f.pagamento === p ? 'ativo' : '') + '">' + p + '</button>'; }).join('') + '</div>';
+    if (f.pagamento === 'Parcelado') h += '<label class="campo"><span>Parcelas</span><div class="stepper"><button data-acao="cvParcStep" data-n="-1">−</button><input id="cvParc" inputmode="numeric" value="' + f.parcelas + '"><button data-acao="cvParcStep" data-n="1">+</button></div></label>';
+    h += '<div class="duas"><label class="campo"><span>Entrega (opcional)</span><input id="cvEntrega" maxlength="60" value="' + esc(f.entrega) + '" placeholder="Ex.: 5 dias úteis" autocomplete="off"></label>' +
+      '<label class="campo"><span>Link (opcional)</span><input id="cvLink" type="url" inputmode="url" maxlength="500" value="' + esc(f.link) + '" placeholder="https://…" autocomplete="off"></label></div>';
+    h += '<label class="campo"><span>Observação (opcional)</span><input id="cvObs" maxlength="500" value="' + esc(f.obs) + '" autocomplete="off" placeholder="Ex.: cor preta, garantia estendida"></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="cvSalvar" id="cvSalvar">' + ic('check') + (f.id ? 'Salvar cotação' : 'Adicionar cotação') + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFQ(maisUma) {
+    lerFQ();
+    var f = FQ;
+    if (!f.fornecedor.trim()) return toast('Informe a loja/fornecedor', true);
+    if (!f.cents) return toast('Informe o valor', true);
+    if (f.link && !/^https:\/\//i.test(f.link.trim())) return toast('O link precisa começar com https://', true);
+    var b = $('#cvSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    mutar('cotacaoSalvar', { id: f.id, compraId: f.compraId, fornecedor: f.fornecedor.trim(), valor: f.cents / 100, frete: f.frete / 100, pagamento: f.pagamento, parcelas: f.parcelas, entrega: f.entrega, link: f.link.trim(), obs: f.obs })
+      .then(function () { var cid = f.compraId, ed = !!f.id; FQ = null; abrirCompra(cid); toast(ed ? 'Cotação atualizada' : 'Cotação adicionada'); }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+
+  /* ----- aprovação ----- */
+  function formAprovar(id) {
+    var Q = cotsDe(id), hoje = S.k.hoje;
+    var best = Q[0];
+    FA = { id: id, cotacaoId: best.id, destino: 'fin', vencimento: hoje, parcelas: best.parcelas, categoria: best.parcelas > 1 ? 'Compras parceladas' : 'Outros', metaModo: 'nova', metaId: '', prazo: '' };
+    renderAprovar();
+  }
+  function lerFA() {
+    if (!FA) return;
+    var g = function (i) { var e = document.getElementById(i); return e ? e.value : null; };
+    if (g('faVenc') !== null) FA.vencimento = g('faVenc');
+    if (g('faCat') !== null) FA.categoria = g('faCat');
+    if (g('faParc') !== null) FA.parcelas = Math.max(1, Math.min(48, parseInt(g('faParc'), 10) || 1));
+    if (g('faPrazo') !== null) FA.prazo = g('faPrazo');
+    if (g('faMeta') !== null) FA.metaId = g('faMeta');
+  }
+  function renderAprovar() {
+    var f = FA, x = S.k.compras.find(function (o) { return o.id === f.id; }), Q = cotsDe(f.id);
+    var q = Q.find(function (o) { return o.id === f.cotacaoId; }) || Q[0], total = totalCot(q);
+    var h = '<h2><span>Aprovar compra</span><button class="icon-btn" data-acao="kDet" data-id="' + f.id + '">' + ic('x') + '</button></h2>';
+    h += '<p class="muted" style="margin:-8px 0 12px">' + esc(x.nome) + '</p>';
+    h += '<div class="campo"><span>Cotação escolhida</span><div class="lista">' + Q.map(function (o, i) {
+      return '<button class="cot-opcao' + (o.id === f.cotacaoId ? ' sel' : '') + '" data-acao="faCot" data-v="' + o.id + '"><span class="cx">' + ic('check') + '</span><span class="corpo"><b>' + esc(o.fornecedor) + (i === 0 && Q.length > 1 ? ' 🏆' : '') + '</b><small class="muted">' + esc(pagTxt(o)) + '</small></span><b class="num">' + brl(totalCot(o)) + '</b></button>';
+    }).join('') + '</div></div>';
+    h += '<label class="campo" style="margin-bottom:6px"><span>Para onde vai?</span></label><div class="seg"><button data-acao="faDest" data-v="fin" class="' + (f.destino === 'fin' ? 'ativo' : '') + '">💰 Despesa no Financeiro</button><button data-acao="faDest" data-v="meta" class="' + (f.destino === 'meta' ? 'ativo' : '') + '">🎯 Meta</button></div>';
+    if (f.destino === 'fin') {
+      var cats = S.d ? S.d.categorias.filter(function (c) { return c.tipo === 'Despesa'; }) : [];
+      if (!cats.some(function (c) { return c.nome === f.categoria; })) cats = cats.concat([{ nome: f.categoria }]);
+      h += '<div class="duas"><label class="campo"><span>' + (f.parcelas > 1 ? '1º vencimento' : 'Vencimento') + '</span><input type="date" id="faVenc" value="' + esc(f.vencimento) + '"></label>' +
+        '<label class="campo"><span>Parcelas</span><div class="stepper"><button data-acao="faParcStep" data-n="-1">−</button><input id="faParc" inputmode="numeric" value="' + f.parcelas + '"><button data-acao="faParcStep" data-n="1">+</button></div></label></div>';
+      h += '<label class="campo"><span>Categoria</span><select id="faCat">' + cats.map(function (c) { return '<option' + (c.nome === f.categoria ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join('') + '</select></label>';
+      var ini = (f.vencimento || S.k.hoje).slice(0, 7);
+      h += '<div class="aviso-box" style="background:var(--accent-soft);color:var(--accent)">' + ic('cal') + '<span>' + (f.parcelas > 1 ? 'Gera <b>' + f.parcelas + ' parcelas de ' + brl(total / f.parcelas) + '</b> de ' + mesCurto(ini) + ' a ' + mesCurto(somarMes(ini, f.parcelas - 1)) : 'Gera <b>1 despesa de ' + brl(total) + '</b> em ' + mesCurto(ini)) + ', pendente(s), como “Compra: ' + esc(x.nome) + '”.</span></div>';
+    } else {
+      var ativasM = S.m ? S.m.metas.filter(function (o) { return o.status !== 'Concluída'; }) : [];
+      h += '<div class="seg"><button data-acao="faModo" data-v="nova" class="' + (f.metaModo === 'nova' ? 'ativo' : '') + '">Criar meta nova</button><button data-acao="faModo" data-v="existente" class="' + (f.metaModo === 'existente' ? 'ativo' : '') + '"' + (ativasM.length ? '' : ' disabled') + '>Usar meta existente</button></div>';
+      if (f.metaModo === 'nova') {
+        h += '<label class="campo"><span>Prazo para juntar (opcional)</span><input type="date" id="faPrazo" value="' + esc(f.prazo) + '"></label>';
+        h += '<div class="aviso-box" style="background:var(--accent-soft);color:var(--accent)">' + ic('target') + '<span>Cria a meta <b>🛒 Compra: ' + esc(x.nome) + '</b> com alvo de <b>' + brl(total) + '</b>. Quando chegar a 100%, volte aqui e marque como comprado.</span></div>';
+      } else {
+        if (!f.metaId && ativasM[0]) f.metaId = ativasM[0].id;
+        h += '<label class="campo"><span>Meta</span><select id="faMeta">' + ativasM.map(function (o) { return '<option value="' + o.id + '"' + (o.id === f.metaId ? ' selected' : '') + '>' + esc(o.icone + ' ' + o.nome) + ' (' + ritmoMeta(o).pct.toFixed(0) + '%)</option>'; }).join('') + '</select></label>';
+      }
+    }
+    h += '<div class="acoes"><button class="btn ok" data-acao="faSalvar" id="faSalvar">' + ic('check') + 'Aprovar · ' + brl(total) + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFA() {
+    lerFA();
+    var f = FA;
+    if (f.destino === 'fin' && !f.vencimento) return toast('Informe o vencimento', true);
+    if (f.destino === 'meta' && f.metaModo === 'existente' && !f.metaId) return toast('Escolha a meta', true);
+    var b = $('#faSalvar'); b.disabled = true; b.textContent = 'Aprovando…';
+    var dados = { id: f.id, cotacaoId: f.cotacaoId, destino: f.destino, fin: { vencimento: f.vencimento, parcelas: f.parcelas, categoria: f.categoria }, meta: { modo: f.metaModo, metaId: f.metaId, prazo: f.prazo } };
+    mutar('compraAprovar', dados).then(function () {
+      var id = f.id; FA = null;
+      if (dados.destino === 'fin') atualizarFinanceiroDepois(); else api('metas').then(function (d) { S.m = d; if (!$('#sheet').hidden) abrirCompra(id); }, function () {});
+      S.kview = 'Aprovado'; render(); abrirCompra(id); toast('Compra aprovada ✅');
+    }, function () { b.disabled = false; b.textContent = 'Tentar de novo'; });
+  }
+
   /* ================= DOCUMENTOS ================= */
   var DVIEWS = [{ id: 'docs', nome: 'Documentos', ic: 'idcard' }, { id: 'ir', nome: 'Imposto de Renda', ic: 'receipt' }];
   var EMO_DOC = { 'CPF': '🧾', 'RG': '🪪', 'CNH': '🚗', 'Passaporte': '🛂', 'Título de eleitor': '🗳️', 'CTPS': '📕', 'Certidão': '📜', 'Reservista': '🎖️', 'Outro': '📄' };
@@ -2338,6 +2622,63 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // compras
+      case 'kView': S.kview = id; store('cm_kview', id); render(); window.scrollTo(0, 0); break;
+      case 'kLista': S.kLista = id; render(); break;
+      case 'kDet': FQ = null; FA = null; abrirCompra(id); break;
+      case 'kEditar': formCompra(id); break;
+      case 'kAprovar': formAprovar(id); break;
+      case 'kSt':
+        var stv = el.getAttribute('data-v');
+        mutar('compraStatus', { id: id, status: stv }).then(function () {
+          S.kview = stv === 'Comprado' || stv === 'Recusado' ? 'Final' : stv; render(); abrirCompra(id);
+          toast({ Comprado: '📦 Marcado como comprado', Recusado: 'Item recusado', Aprovado: 'Voltou para aprovado', Cotando: 'Voltou para cotação' }[stv]);
+        }, function () {});
+        break;
+      case 'kDesaprovar':
+        var kx = S.k.compras.find(function (o) { return o.id === id; });
+        abrirSheet('<h2><span>Desfazer aprovação?</span></h2><p class="muted" style="margin-top:-6px">' + esc(kx.nome) + ' volta para <b>Cotando</b>.</p><p class="muted" style="font-size:14px">' +
+          (kx.destino === 'Financeiro' ? 'As despesas criadas no Financeiro (ainda pendentes) serão excluídas. Se alguma parcela já foi paga, não dá para desfazer.' : 'Se a meta foi criada pela aprovação e não tem movimentações, ela é excluída; caso contrário, só é desvinculada.') +
+          '</p><div class="acoes"><button class="btn perigo" data-acao="kDesaprovarOk" data-id="' + id + '">' + ic('undo') + 'Desfazer</button><button class="btn sec" data-acao="kDet" data-id="' + id + '">Cancelar</button></div>');
+        break;
+      case 'kDesaprovarOk':
+        el.disabled = true; el.textContent = 'Desfazendo…';
+        var dest0 = (S.k.compras.find(function (o) { return o.id === id; }) || {}).destino;
+        mutar('compraDesaprovar', { id: id }).then(function () {
+          if (dest0 === 'Financeiro') atualizarFinanceiroDepois(); else api('metas').then(function (d) { S.m = d; }, function () {});
+          S.kview = 'Cotando'; render(); abrirCompra(id); toast('Aprovação desfeita');
+        }, function () { el.disabled = false; el.textContent = 'Tentar de novo'; });
+        break;
+      case 'kExcluir':
+        var kz = S.k.compras.find(function (o) { return o.id === id; });
+        abrirSheet('<h2><span>Excluir item?</span></h2><p class="muted" style="margin-top:-6px">' + esc(kz.nome) + ' e suas ' + cotsDe(id).length + ' cotação(ões).</p><div class="acoes">' +
+          '<button class="btn perigo" data-acao="kExcluirOk" data-id="' + id + '">' + ic('trash') + 'Excluir</button><button class="btn sec" data-acao="kDet" data-id="' + id + '">Cancelar</button></div>');
+        break;
+      case 'kExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar('compraExcluir', { id: id }).then(function () { fecharSheet(); toast('Item excluído'); }, function () {});
+        break;
+      case 'cvNova': formCotacao(id); break;
+      case 'cvEditar': var qe = S.k.cotacoes.find(function (o) { return o.id === id; }); formCotacao(qe.compraId, id); break;
+      case 'cvExcluir':
+        var qx = S.k.cotacoes.find(function (o) { return o.id === id; });
+        if (!confirm('Excluir a cotação de ' + qx.fornecedor + ' (' + brl(totalCot(qx)) + ')?')) break;
+        mutar('cotacaoExcluir', { id: id }).then(function () { abrirCompra(qx.compraId); toast('Cotação excluída'); }, function () {});
+        break;
+      case 'cvPag': lerFQ(); FQ.pagamento = el.getAttribute('data-v'); renderFormCotacao(); break;
+      case 'cvParcStep': lerFQ(); FQ.parcelas = Math.max(2, Math.min(48, FQ.parcelas + (+el.getAttribute('data-n')))); $('#cvParc').value = FQ.parcelas; break;
+      case 'cvSalvar': salvarFQ(); break;
+      case 'fkTitular': lerFK(); FK.titular = el.getAttribute('data-v'); renderFormCompra(); break;
+      case 'fkQtdStep': lerFK(); FK.quantidade = Math.max(1, FK.quantidade + (+el.getAttribute('data-n'))); $('#fkQtd').value = FK.quantidade; break;
+      case 'fkSalvar': salvarFK(); break;
+      case 'faCot':
+        lerFA(); FA.cotacaoId = el.getAttribute('data-v');
+        var qc = S.k.cotacoes.find(function (o) { return o.id === FA.cotacaoId; }); FA.parcelas = qc.parcelas; FA.categoria = qc.parcelas > 1 ? 'Compras parceladas' : 'Outros';
+        renderAprovar(); break;
+      case 'faDest': lerFA(); FA.destino = el.getAttribute('data-v'); renderAprovar(); break;
+      case 'faModo': lerFA(); FA.metaModo = el.getAttribute('data-v'); renderAprovar(); break;
+      case 'faParcStep': lerFA(); FA.parcelas = Math.max(1, Math.min(48, FA.parcelas + (+el.getAttribute('data-n')))); renderAprovar(); break;
+      case 'faSalvar': salvarFA(); break;
       // metas
       case 'mView': S.mview = id; store('cm_mview', id); render(); window.scrollTo(0, 0); break;
       case 'mPes': S.metPes = id; render(); break;
@@ -2519,6 +2860,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     else if (S.modulo === 'hab') { if (S.h) formHabito(); }
     else if (S.modulo === 'doc') { if (S.x) { if (S.dview === 'ir') formIr(); else formDoc(); } }
     else if (S.modulo === 'met') { if (S.m) formMeta(); }
+    else if (S.modulo === 'cmp') { if (S.k) formCompra(); }
     else if (S.d) novoForm();
   });
 
@@ -2529,6 +2871,11 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       FORM.cents = +dig || 0;
       t.value = FORM.cents ? NUM.format(FORM.cents / 100) : '';
       if ($('#fParcInfo')) $('#fParcInfo').innerHTML = infoParcelas();
+    } else if (t.id === 'cvValor' || t.id === 'cvFrete') {
+      var dq = t.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11), cents = +dq || 0;
+      if (t.id === 'cvValor') FQ.cents = cents; else FQ.frete = cents;
+      t.value = cents ? NUM.format(cents / 100) : '';
+      var tt = $('#cvTotal'); if (tt) tt.innerHTML = 'Total: <b>' + brl((FQ.cents + FQ.frete) / 100) + '</b>';
     } else if (t.id === 'fmAlvo' || t.id === 'mvValor') {
       var dm = t.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11), alvoObj = t.id === 'fmAlvo' ? FM : FV;
       alvoObj.cents = +dm || 0;
@@ -2545,6 +2892,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     var t = ev.target;
     if (t.hasAttribute && t.hasAttribute('data-anexar')) { anexar(t.getAttribute('data-anexar'), t.files[0]); t.value = ''; }
     if (t.id === 'cardFoto') { fotoCard(t.files[0]); t.value = ''; }
+    if ((t.id === 'faVenc' || t.id === 'faParc') && FA) { lerFA(); renderAprovar(); } // atualiza a prévia das parcelas
   });
   document.addEventListener('keydown', function (ev) {
     if (!$('#pin').hidden) {
@@ -2561,6 +2909,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       else if (t.id === 'ftTit') { ev.preventDefault(); salvarFT(); }
       else if (t.id === 'fhNome') { ev.preventDefault(); salvarFH(); }
       else if (t.id === 'fmNome') { ev.preventDefault(); salvarFM(); }
+      else if (t.id === 'fkNome') { ev.preventDefault(); salvarFK(); }
     }
   });
 
