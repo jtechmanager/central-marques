@@ -422,6 +422,24 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 .card-prev { min-height: 150px; margin-bottom: 12px; }
 .pers-thumb { width: 52px; height: 52px; flex: none; border-radius: 14px; background-size: cover; background-position: center; font-size: 24px; display: grid; place-items: center; }
 
+/* ---------- metas ---------- */
+.meta-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border-radius: var(--radius); padding: 14px 12px; box-shadow: var(--shadow); }
+.meta-item .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.meta-item .mtopo { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.meta-item .mtopo b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta-item .mtopo .num { font-weight: 800; color: #db2777; }
+.mbarra { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.mbarra i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f472b6, #db2777); transition: width .4s; }
+.meta-item .meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.meta-anel { position: relative; width: 150px; height: 150px; margin: 4px auto 16px; }
+.meta-anel svg { width: 150px; height: 150px; }
+.meta-anel .trilho { fill: none; stroke: var(--surface-2); stroke-width: 12; }
+.meta-anel .arco { fill: none; stroke: #db2777; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray .5s; }
+.meta-anel div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.meta-anel b { font-size: 30px; font-weight: 800; }
+.meta-anel small { color: var(--muted); font-size: 13px; }
+.btn:disabled { cursor: not-allowed; }
+
 /* ---------- pessoas (de quem) ---------- */
 .tag.pessoa { background: var(--accent-soft); color: var(--accent); }
 .chip.leve { padding: 8px 12px; display: inline-flex; align-items: center; }
@@ -559,6 +577,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     eyeoff: '<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
     receipt: '<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>',
+    minus: '<path d="M5 12h14"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
@@ -587,7 +607,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     modulo: 'home', // o app sempre abre no Início t: null, col: store('cm_col') || 'A fazer', tagF: '',
     h: null, hview: store('cm_hview') || 'hoje', hdia: null,
     x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {},
-    pessoa: 'Higor' }; // ao abrir, sempre só os lançamentos do Higor
+    pessoa: 'Higor', // ao abrir, sempre só os lançamentos do Higor
+    m: null, mview: store('cm_mview') || 'metas', metPes: 'Higor' };
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -598,7 +619,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     { id: 'fin', nome: 'Financeiro', ic: 'wallet' },
     { id: 'tar', nome: 'Tarefas', ic: 'kanban' },
     { id: 'hab', nome: 'Hábitos', ic: 'flame' },
-    { id: 'doc', nome: 'Documentos', ic: 'idcard' }
+    { id: 'doc', nome: 'Documentos', ic: 'idcard' },
+    { id: 'met', nome: 'Metas', ic: 'target' }
   ];
 
   /* ================= servidor ================= */
@@ -641,7 +663,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
-    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : 'd');
+    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : 'd');
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
@@ -725,10 +747,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc'].filter(function (m) { return m !== S.modulo; }));
+    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met'].filter(function (m) { return m !== S.modulo; }));
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'] };
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     return api(c[0]).then(function (d) {
@@ -787,6 +809,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (S.modulo === 'tar') { if (S.t) renderTar(); return; }
     if (S.modulo === 'hab') { if (S.h) renderHab(); return; }
     if (S.modulo === 'doc') { if (S.x) renderDoc(); return; }
+    if (S.modulo === 'met') { if (S.m) renderMet(); return; }
     if (!S.d) return;
     var vencidos = lancs().filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
@@ -1703,9 +1726,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     fin: { nome: 'Financeiro', descricao: 'Receitas, despesas, parcelas e previsão do mês', emoji: '💰', cor: '#15803d' },
     tar: { nome: 'Tarefas', descricao: 'Kanban com checklists, tags e prazos', emoji: '📋', cor: '#2563eb' },
     hab: { nome: 'Hábitos', descricao: 'Check-in diário e sequências', emoji: '🔥', cor: '#ea580c' },
-    doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' }
+    doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' },
+    met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' }
   };
-  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc'];
+  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met'];
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -1761,6 +1785,13 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       if (m === 'hab' && S.h) {
         var A = ativos().filter(function (x) { return agendado(x, S.h.hoje); }), ok = A.filter(function (x) { return feito(x, S.h.hoje); }).length;
         return A.length ? { txt: ok + '/' + A.length + ' hábitos hoje' + (ok === A.length ? ' 🎉' : '') } : { txt: 'Folga hoje' };
+      }
+      if (m === 'met' && S.m) {
+        var at = S.m.metas.filter(function (x) { return x.status === 'Ativa'; });
+        if (!S.m.metas.length) return { txt: 'Crie sua primeira meta' };
+        var guard = at.reduce(function (s, x) { return s + saldoMeta(x.id); }, 0);
+        var atr = at.filter(function (x) { return ritmoMeta(x).atrasada; }).length;
+        return { txt: brl(guard) + ' guardados · ' + at.length + ' ativa(s)' + (atr ? ' · ' + atr + ' atrasada(s)' : ''), alerta: atr > 0 };
       }
       if (m === 'doc' && S.x) {
         var v = S.x.docs.filter(function (d) { var n = diasDoc(d); return n !== null && n < 0; }).length;
@@ -1886,6 +1917,184 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     }, 'c').then(function () {}, function () {});
     abrirPersonalizar();
   }
+
+  /* ================= METAS ================= */
+  var MVIEWS = [{ id: 'metas', nome: 'Metas', ic: 'target' }, { id: 'movs', nome: 'Movimentações', ic: 'clock' }];
+  var EMO_META = ['🎯', '🛡️', '🏖️', '✈️', '🚗', '🏍️', '🏠', '🎓', '💍', '👶', '📱', '💻', '🩺', '🐶', '🎸', '💰'];
+  function saldoMeta(id) { return S.m.movs.filter(function (v) { return v.metaId === id; }).reduce(function (s, v) { return s + (v.tipo === 'Aporte' ? v.valor : -v.valor); }, 0); }
+  function mesesEntre(a, b) { return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
+  /** Quanto guardar por mês até o prazo, e se o ritmo está atrás do esperado (progresso linear desde a criação). */
+  function ritmoMeta(x) {
+    var saldo = saldoMeta(x.id), falta = Math.max(0, x.alvo - saldo), r = { falta: falta, saldo: saldo, pct: x.alvo ? Math.min(100, saldo / x.alvo * 100) : 0 };
+    if (!x.prazo || x.status === 'Concluída' || falta <= 0) return r;
+    var hoje = S.m.hoje;
+    r.vencida = x.prazo < hoje;
+    r.porMes = r.vencida ? falta : falta / Math.max(1, mesesEntre(hoje, x.prazo) || 1);
+    var ini = (x.criadoEm || hoje).slice(0, 10), tot = Math.max(1, diasEntre(ini, x.prazo)), dec = Math.max(0, diasEntre(ini, hoje));
+    var esperado = Math.min(1, dec / tot) * x.alvo;
+    r.atrasada = x.status === 'Ativa' && (r.vencida || saldo + 0.01 < esperado * 0.9);
+    return r;
+  }
+  function metasDa() { return S.m.metas.filter(function (x) { return S.metPes === '*' || x.titular === S.metPes; }); }
+  function pessoasMeta() {
+    var c = {}; c[padraoPessoa()] = 1;
+    S.m.metas.forEach(function (x) { c[x.titular] = 1; });
+    return Object.keys(c).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || a.localeCompare(b); });
+  }
+
+  function renderMet() {
+    var nav = MVIEWS.map(function (v) { return '<button class="' + (S.mview === v.id ? 'ativo' : '') + '" data-acao="mView" data-id="' + v.id + '">' + ic(v.ic) + '<span>' + v.nome + '</span></button>'; }).join('');
+    $('#bottomNav').style.gridTemplateColumns = 'repeat(2, 1fr)';
+    $('#bottomNav').innerHTML = nav;
+    $('#subnav').innerHTML = nav; $('#subnav').hidden = false;
+    var P = pessoasMeta(), chips = '';
+    if (P.length > 1) chips = '<div class="chips pessoas">' + P.map(function (p) { return '<button class="chip' + (S.metPes === p ? ' ativo' : '') + '" data-acao="mPes" data-id="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') +
+      '<button class="chip' + (S.metPes === '*' ? ' ativo' : '') + '" data-acao="mPes" data-id="*">👥 Todos</button></div>';
+    $('#view').innerHTML = chips + (S.mview === 'movs' ? vMovs() : vMetas());
+  }
+
+  function vMetas() {
+    var M = metasDa();
+    if (!S.m.metas.length) return vazio('target', 'Nenhuma meta ainda', 'Toque no <b style="display:inline">+</b> para criar sua primeira meta — uma viagem, uma reserva, um carro…');
+    var at = M.filter(function (x) { return x.status === 'Ativa'; });
+    var guard = at.reduce(function (s, x) { return s + saldoMeta(x.id); }, 0), alvo = at.reduce(function (s, x) { return s + x.alvo; }, 0);
+    var pct = alvo ? Math.min(100, guard / alvo * 100) : 0;
+    var h = '<div class="saldo"><div class="linha"><span class="muted">Guardado nas metas ativas</span><span class="v num">' + brl(guard) + '</span></div>' +
+      '<div class="barra"><i style="width:' + pct + '%;background:#db2777"></i></div><div class="sub"><span>' + pct.toFixed(0) + '% de ' + brl(alvo) + '</span><span>Falta ' + brl(Math.max(0, alvo - guard)) + '</span></div></div>';
+    var grupo = function (titulo, L) { return L.length ? '<div class="secao"><span>' + titulo + '</span><span>' + L.length + '</span></div><div class="lista">' + L.map(metaItem).join('') + '</div>' : ''; };
+    var ord = function (a, b) { return a.ordem - b.ordem || a.nome.localeCompare(b.nome); };
+    h += grupo('Em andamento', at.sort(ord)) + grupo('Pausadas', M.filter(function (x) { return x.status === 'Pausada'; }).sort(ord)) + grupo('Concluídas 🎉', M.filter(function (x) { return x.status === 'Concluída'; }).sort(ord));
+    if (!M.length) h += vazio('target', 'Nenhuma meta de ' + esc(S.metPes), '');
+    return h;
+  }
+  function metaItem(x) {
+    var r = ritmoMeta(x);
+    var info = x.status === 'Concluída' ? '<span class="tag okv">Meta atingida 🎉</span>' : x.status === 'Pausada' ? '<span class="tag">Pausada</span>'
+      : r.porMes ? '<span class="tag ' + (r.atrasada ? 'atraso' : '') + '">' + (r.vencida ? 'Prazo vencido' : 'Guarde ' + brl(r.porMes) + '/mês') + '</span>' : '';
+    return '<button class="meta-item" data-acao="mDet" data-id="' + x.id + '"><span class="hab-ic">' + esc(x.icone) + '</span><span class="corpo">' +
+      '<span class="mtopo"><b>' + esc(x.nome) + '</b><span class="num">' + r.pct.toFixed(0) + '%</span></span>' +
+      '<span class="mbarra"><i style="width:' + r.pct + '%"></i></span>' +
+      '<span class="meta"><span class="num">' + brl(r.saldo) + ' de ' + brl(x.alvo) + '</span>' + (x.prazo ? '<span>até ' + dataBR(x.prazo).slice(3) + '/' + x.prazo.slice(2, 4) + '</span>' : '') + info +
+      (S.metPes === '*' && x.titular !== padraoPessoa() ? '<span class="tag pessoa">' + esc(x.titular) + '</span>' : '') + '</span></span></button>';
+  }
+
+  function abrirMeta(id) {
+    var x = S.m.metas.find(function (o) { return o.id === id; }); if (!x) return fecharSheet();
+    var r = ritmoMeta(x), c = 2 * Math.PI * 52;
+    var h = '<h2><span>' + esc(x.icone + ' ' + x.nome) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="meta-anel"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="trilho"/><circle cx="60" cy="60" r="52" class="arco" stroke-dasharray="' + (c * r.pct / 100) + ' ' + c + '" transform="rotate(-90 60 60)"/></svg>' +
+      '<div><b class="num">' + r.pct.toFixed(0) + '%</b><small class="num">' + brl(r.saldo) + '</small></div></div>';
+    h += '<div class="det-grid"><div><small>Meta</small><b class="num">' + brl(x.alvo) + '</b></div><div><small>Falta</small><b class="num">' + brl(r.falta) + '</b></div>' +
+      '<div><small>Prazo</small><b>' + (x.prazo ? dataBRc(x.prazo) : 'Sem prazo') + '</b></div><div><small>' + (r.porMes ? (r.vencida ? 'Prazo vencido' : 'Guardar por mês') : 'De quem') + '</small><b class="num" style="' + (r.atrasada ? 'color:var(--red)' : '') + '">' + (r.porMes ? brl(r.porMes) : esc(x.titular)) + '</b></div></div>';
+    if (r.atrasada && !r.vencida) h += '<div class="aviso-box">' + ic('alert') + '<span>Ritmo abaixo do necessário para chegar no prazo.</span></div>';
+    if (x.obs) h += '<p class="muted" style="margin:0 0 14px;white-space:pre-wrap">' + esc(x.obs) + '</p>';
+    h += '<div class="acoes g2" style="margin-bottom:10px"><button class="btn ok" data-acao="mMov" data-id="' + x.id + '" data-v="Aporte">' + ic('plus') + 'Guardar</button>' +
+      '<button class="btn sec" data-acao="mMov" data-id="' + x.id + '" data-v="Retirada"' + (r.saldo > 0 ? '' : ' disabled') + '>' + ic('minus') + 'Retirar</button></div>';
+    var L = S.m.movs.filter(function (v) { return v.metaId === id; }).sort(function (a, b) { return b.data.localeCompare(a.data) || (b.criadoEm || '').localeCompare(a.criadoEm || ''); });
+    h += '<div class="secao"><span>Movimentações</span><span>' + L.length + '</span></div>';
+    h += L.length ? '<div class="card" style="padding:2px 12px">' + L.map(function (v) { return movLinha(v, false); }).join('') + '</div>' : '<p class="muted" style="margin:0 0 12px">Nenhuma movimentação ainda. Toque em <b>Guardar</b> para o primeiro aporte.</p>';
+    h += '<div class="acoes g2" style="margin-top:14px"><button class="btn sec" data-acao="mEditar" data-id="' + x.id + '">' + ic('edit') + 'Editar</button>' +
+      '<button class="btn sec" data-acao="mPausar" data-id="' + x.id + '">' + (x.status === 'Pausada' ? ic('play') + 'Retomar' : ic('pause') + 'Pausar') + '</button></div>' +
+      '<div class="acoes" style="margin-top:10px"><button class="btn perigo" data-acao="mExcluir" data-id="' + x.id + '">' + ic('trash') + 'Excluir meta</button></div>';
+    abrirSheet(h);
+  }
+  function movLinha(v, comMeta) {
+    var x = comMeta ? S.m.metas.find(function (o) { return o.id === v.metaId; }) : null;
+    var ap = v.tipo === 'Aporte';
+    return '<div class="hist"><div class="ic ' + (ap ? 'pago' : 'pend') + '">' + ic(ap ? 'plus' : 'minus') + '</div><div class="corpo"><div class="t1">' + (x ? esc(x.icone + ' ' + x.nome) : (ap ? 'Aporte' : 'Retirada')) + '</div>' +
+      '<div class="t2">' + dataBRc(v.data) + (v.lancamentoId ? ' · no Financeiro' : '') + (v.obs ? ' · ' + esc(v.obs) : '') + '</div></div>' +
+      '<b class="num" style="color:' + (ap ? 'var(--green)' : 'var(--amber)') + '">' + (ap ? '+ ' : '− ') + brl(v.valor) + '</b>' +
+      '<button class="icon-btn mini" data-acao="mMovDel" data-id="' + v.id + '" title="Excluir">' + ic('x') + '</button></div>';
+  }
+  function vMovs() {
+    var ids = metasDa().map(function (x) { return x.id; });
+    var L = S.m.movs.filter(function (v) { return ids.indexOf(v.metaId) >= 0; }).sort(function (a, b) { return b.data.localeCompare(a.data); });
+    if (!L.length) return vazio('clock', 'Sem movimentações', 'Os aportes e retiradas das metas aparecem aqui.');
+    var porMes = {}, ordem = [];
+    L.forEach(function (v) { var m = v.data.slice(0, 7); if (!porMes[m]) { porMes[m] = []; ordem.push(m); } porMes[m].push(v); });
+    return ordem.map(function (m) {
+      var tot = porMes[m].reduce(function (s, v) { return s + (v.tipo === 'Aporte' ? v.valor : -v.valor); }, 0);
+      return '<div class="secao"><span style="text-transform:capitalize">' + nomeMes(m) + '</span><span class="num">' + (tot >= 0 ? '+ ' : '− ') + brl(Math.abs(tot)) + '</span></div><div class="card" style="padding:2px 12px">' +
+        porMes[m].map(function (v) { return movLinha(v, true); }).join('') + '</div>';
+    }).join('');
+  }
+
+  /* ----- formulários ----- */
+  var FM = null, FV = null;
+  function formMeta(id) {
+    var x = id ? S.m.metas.find(function (o) { return o.id === id; }) : null;
+    FM = x ? { id: x.id, nome: x.nome, icone: x.icone, cents: Math.round(x.alvo * 100), prazo: x.prazo, titular: x.titular, obs: x.obs, nova: false }
+      : { id: '', nome: '', icone: '🎯', cents: 0, prazo: '', titular: S.metPes !== '*' ? S.metPes : padraoPessoa(), obs: '', nova: true };
+    renderFormMeta();
+    if (!id) setTimeout(function () { var e = $('#fmNome'); if (e) e.focus(); }, 250);
+  }
+  function lerFM() {
+    if (!FM) return;
+    var n = $('#fmNome'), p = $('#fmPrazo'), o = $('#fmObs'), t = $('#fmTitularNovo');
+    if (n) FM.nome = n.value; if (p) FM.prazo = p.value; if (o) FM.obs = o.value;
+    if (t && t.value.trim()) FM.titular = t.value.replace(/\s+/g, ' ').trim();
+  }
+  function renderFormMeta() {
+    var f = FM;
+    var P = pessoasMeta().concat(S.d ? pessoas() : []).filter(function (p, i, a) { return a.indexOf(p) === i; });
+    var h = '<h2><span>' + (f.nova ? 'Nova meta' : 'Editar meta') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<label class="campo"><span>Nome</span><input id="fmNome" maxlength="50" value="' + esc(f.nome) + '" placeholder="Ex.: Reserva de emergência, Viagem, Carro" autocomplete="off"></label>';
+    h += '<div class="campo"><span>Ícone</span><div class="emojis">' + EMO_META.map(function (e) { return '<button class="' + (f.icone === e ? 'sel' : '') + '" data-acao="fmIcone" data-v="' + e + '">' + e + '</button>'; }).join('') + '</div></div>';
+    h += '<label class="campo"><span>Valor da meta</span><input class="valor-in num" id="fmAlvo" inputmode="numeric" autocomplete="off" value="' + (f.cents ? NUM.format(f.cents / 100) : '') + '" placeholder="0,00"></label>';
+    h += '<label class="campo"><span>Prazo (opcional)</span><input type="date" id="fmPrazo" value="' + esc(f.prazo) + '"></label>';
+    h += '<div class="campo"><span>De quem</span><div class="chips quem">' + P.map(function (p) { return '<button class="chip' + (f.titular === p ? ' ativo' : '') + '" data-acao="fmTitular" data-v="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div>' +
+      '<input id="fmTitularNovo" maxlength="40" placeholder="Outra pessoa ou empresa (opcional)" autocomplete="off" style="margin-top:8px"></div>';
+    h += '<label class="campo"><span>Observação (opcional)</span><textarea id="fmObs" maxlength="1000" rows="2">' + esc(f.obs) + '</textarea></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fmSalvar" id="fmSalvar">' + ic('check') + (f.nova ? 'Criar meta' : 'Salvar alterações') + '</button></div>';
+    abrirSheet(h);
+  }
+  function salvarFM() {
+    lerFM();
+    var f = FM;
+    if (!f.nome.trim()) return toast('Dê um nome à meta', true);
+    if (!f.cents) return toast('Informe o valor da meta', true);
+    var b = $('#fmSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    mutar('metaSalvar', { id: f.id, nome: f.nome.trim(), icone: f.icone, alvo: f.cents / 100, prazo: f.prazo, titular: f.titular, obs: f.obs })
+      .then(function () { var nova = f.nova; FM = null; fecharSheet(); toast(nova ? 'Meta criada 🎯' : 'Meta atualizada'); }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+
+  function formMov(metaId, tipo) {
+    var x = S.m.metas.find(function (o) { return o.id === metaId; });
+    FV = { metaId: metaId, tipo: tipo, cents: 0, data: S.m.hoje, obs: '', lancar: true };
+    renderFormMov(x);
+    setTimeout(function () { var e = $('#mvValor'); if (e) e.focus(); }, 250);
+  }
+  function renderFormMov(x) {
+    x = x || S.m.metas.find(function (o) { return o.id === FV.metaId; });
+    var f = FV, ap = f.tipo === 'Aporte', saldo = saldoMeta(x.id);
+    var h = '<h2><span>' + esc(x.icone + ' ' + x.nome) + '</span><button class="icon-btn" data-acao="mDet" data-id="' + x.id + '">' + ic('x') + '</button></h2>';
+    h += '<div class="seg"><button data-acao="mvTipo" data-v="Aporte" class="' + (ap ? 'ativo' : '') + '">+ Guardar</button><button data-acao="mvTipo" data-v="Retirada" class="' + (!ap ? 'ativo' : '') + '"' + (saldo > 0 ? '' : ' disabled') + '>− Retirar</button></div>';
+    h += '<label class="campo"><span>Valor</span><input class="valor-in num" id="mvValor" inputmode="numeric" autocomplete="off" value="' + (f.cents ? NUM.format(f.cents / 100) : '') + '" placeholder="0,00"></label>';
+    if (!ap) h += '<p class="muted" style="font-size:13px;margin:-8px 0 12px">Saldo disponível na meta: <b>' + brl(saldo) + '</b></p>';
+    h += '<div class="duas"><label class="campo"><span>Data</span><input type="date" id="mvData" value="' + esc(f.data) + '"></label>' +
+      '<label class="campo"><span>Observação</span><input id="mvObs" maxlength="300" value="' + esc(f.obs) + '" autocomplete="off" placeholder="opcional"></label></div>';
+    h += '<button class="toggle-linha" data-acao="mvLancar" style="width:100%;text-align:left"><span><b>Lançar no Financeiro</b><small>' +
+      (ap ? 'Entra como despesa “Meta: ' + esc(x.nome) + '” (já paga)' : 'Entra como receita “Meta: ' + esc(x.nome) + '”') + ' — o saldo do mês reflete o dinheiro guardado</small></span><span class="sw' + (f.lancar ? ' on' : '') + '"></span></button>';
+    h += '<div class="acoes"><button class="btn ' + (ap ? 'ok' : 'pri') + '" data-acao="mvSalvar" id="mvSalvar">' + ic(ap ? 'plus' : 'minus') + (ap ? 'Guardar' : 'Retirar') + '</button></div>';
+    abrirSheet(h);
+  }
+  function lerFV() { var d = $('#mvData'), o = $('#mvObs'); if (FV && d) { FV.data = d.value; FV.obs = o.value; } }
+  function salvarFV() {
+    lerFV();
+    var f = FV;
+    if (!f.cents) return toast('Informe o valor', true);
+    if (f.tipo === 'Retirada' && f.cents / 100 > saldoMeta(f.metaId) + 0.001) return toast('A retirada é maior que o saldo da meta', true);
+    var b = $('#mvSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    var antes = S.m.metas.find(function (o) { return o.id === f.metaId; }).status;
+    mutar('metaMovimentar', { metaId: f.metaId, tipo: f.tipo, valor: f.cents / 100, data: f.data, obs: f.obs, lancar: f.lancar }).then(function (d) {
+      var x = d.metas.find(function (o) { return o.id === f.metaId; });
+      if (f.lancar) atualizarFinanceiroDepois();
+      FV = null; abrirMeta(x.id);
+      toast(x.status === 'Concluída' && antes !== 'Concluída' ? '🎉 Meta atingida!' : f.tipo === 'Aporte' ? 'Guardado ✓' : 'Retirada registrada');
+    }, function () { b.disabled = false; b.textContent = 'Tentar de novo'; });
+  }
+  // A movimentação pode ter criado/apagado lançamento: recarrega o Financeiro em segundo plano.
+  function atualizarFinanceiroDepois() { api('carregar').then(function (d) { S.d = d; if (S.modulo === 'fin' || S.modulo === 'home') render(); }, function () {}); }
 
   /* ================= DOCUMENTOS ================= */
   var DVIEWS = [{ id: 'docs', nome: 'Documentos', ic: 'idcard' }, { id: 'ir', nome: 'Imposto de Renda', ic: 'receipt' }];
@@ -2129,6 +2338,43 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // metas
+      case 'mView': S.mview = id; store('cm_mview', id); render(); window.scrollTo(0, 0); break;
+      case 'mPes': S.metPes = id; render(); break;
+      case 'mDet': abrirMeta(id); break;
+      case 'mMov': formMov(id, el.getAttribute('data-v')); break;
+      case 'mEditar': formMeta(id); break;
+      case 'mPausar':
+        var mp = S.m.metas.find(function (o) { return o.id === id; });
+        var novoSt = mp.status === 'Pausada' ? 'Ativa' : 'Pausada';
+        mutar('metaSalvar', { id: id, nome: mp.nome, icone: mp.icone, alvo: mp.alvo, prazo: mp.prazo, titular: mp.titular, obs: mp.obs, status: novoSt })
+          .then(function () { abrirMeta(id); toast(novoSt === 'Pausada' ? 'Meta pausada' : 'Meta retomada'); }, function () {});
+        break;
+      case 'mExcluir':
+        var mx = S.m.metas.find(function (o) { return o.id === id; }), nm = S.m.movs.filter(function (v) { return v.metaId === id; }).length;
+        abrirSheet('<h2><span>Excluir meta?</span></h2><p class="muted" style="margin-top:-6px">' + esc(mx.icone + ' ' + mx.nome) + (nm ? ' · ' + nm + ' movimentação(ões) também serão apagadas.' : '') + '</p>' +
+          '<p class="muted" style="font-size:14px">Os lançamentos já criados no Financeiro continuam lá (o dinheiro de fato se moveu). Para só parar por um tempo, use <b>Pausar</b>.</p><div class="acoes">' +
+          '<button class="btn perigo" data-acao="mExcluirOk" data-id="' + id + '">' + ic('trash') + 'Excluir de vez</button><button class="btn sec" data-acao="mDet" data-id="' + id + '">Cancelar</button></div>');
+        break;
+      case 'mExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar('metaExcluir', { id: id }).then(function () { fecharSheet(); toast('Meta excluída'); }, function () {});
+        break;
+      case 'mMovDel':
+        var mv = S.m.movs.find(function (o) { return o.id === id; });
+        if (!confirm('Excluir esta movimentação de ' + brl(mv.valor) + '?' + (mv.lancamentoId ? '\nO lançamento correspondente no Financeiro também será excluído.' : ''))) break;
+        mutar('metaMovExcluir', { id: id }).then(function () {
+          if (mv.lancamentoId) atualizarFinanceiroDepois();
+          if (!$('#sheet').hidden && $('.meta-anel')) abrirMeta(mv.metaId);
+          toast('Movimentação excluída');
+        }, function () {});
+        break;
+      case 'fmIcone': lerFM(); FM.icone = el.getAttribute('data-v'); renderFormMeta(); break;
+      case 'fmTitular': lerFM(); FM.titular = el.getAttribute('data-v'); renderFormMeta(); break;
+      case 'fmSalvar': salvarFM(); break;
+      case 'mvTipo': lerFV(); FV.tipo = el.getAttribute('data-v'); renderFormMov(); break;
+      case 'mvLancar': lerFV(); FV.lancar = !FV.lancar; renderFormMov(); break;
+      case 'mvSalvar': salvarFV(); break;
       // início (cards)
       case 'homePers': FC = null; abrirPersonalizar(); break;
       case 'cardEditar': editarCard(id); break;
@@ -2272,6 +2518,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (S.modulo === 'tar') { if (S.t) formTarefa(); }
     else if (S.modulo === 'hab') { if (S.h) formHabito(); }
     else if (S.modulo === 'doc') { if (S.x) { if (S.dview === 'ir') formIr(); else formDoc(); } }
+    else if (S.modulo === 'met') { if (S.m) formMeta(); }
     else if (S.d) novoForm();
   });
 
@@ -2282,6 +2529,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       FORM.cents = +dig || 0;
       t.value = FORM.cents ? NUM.format(FORM.cents / 100) : '';
       if ($('#fParcInfo')) $('#fParcInfo').innerHTML = infoParcelas();
+    } else if (t.id === 'fmAlvo' || t.id === 'mvValor') {
+      var dm = t.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11), alvoObj = t.id === 'fmAlvo' ? FM : FV;
+      alvoObj.cents = +dm || 0;
+      t.value = alvoObj.cents ? NUM.format(alvoObj.cents / 100) : '';
     } else if (t.id === 'fiValor') {
       var dg = t.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11);
       FI.cents = +dg || 0;
@@ -2309,6 +2560,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       else if (t.id === 'ftTag') { ev.preventDefault(); lerFT(); renderFormTarefa(); setTimeout(function () { var x = $('#ftTag'); if (x) x.focus(); }, 30); }
       else if (t.id === 'ftTit') { ev.preventDefault(); salvarFT(); }
       else if (t.id === 'fhNome') { ev.preventDefault(); salvarFH(); }
+      else if (t.id === 'fmNome') { ev.preventDefault(); salvarFM(); }
     }
   });
 
