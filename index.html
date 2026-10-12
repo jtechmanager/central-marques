@@ -1705,19 +1705,25 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     hab: { nome: 'Hábitos', descricao: 'Check-in diário e sequências', emoji: '🔥', cor: '#ea580c' },
     doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' }
   };
-  var PAINEIS = ['fin', 'tar', 'hab', 'doc'];
+  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc'];
+  var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
+  function ehCustom(m) { return /^c_/.test(m); }
+  function paineisTodos() {
+    var custom = S.c ? S.c.cards.filter(function (c) { return ehCustom(c.modulo); }).map(function (c) { return c.modulo; }) : [];
+    return PAINEIS_REAIS.concat(custom);
+  }
   function cardDe(m) {
     var c = S.c && S.c.cards.filter(function (x) { return x.modulo === m; })[0];
-    var p = CARD_PADRAO[m] || {};
-    return { modulo: m, nome: (c && c.nome) || p.nome, descricao: (c && c.descricao) || p.descricao,
-      imagemId: (c && c.imagemId) || '', ordem: c ? c.ordem : PAINEIS.indexOf(m), emoji: p.emoji, cor: p.cor };
+    var p = CARD_PADRAO[m] || PADRAO_CUSTOM;
+    return { modulo: m, nome: (c && c.nome) || p.nome, descricao: (c && c.descricao) || p.descricao, notas: (c && c.notas) || '',
+      imagemId: (c && c.imagemId) || '', ordem: c ? c.ordem : PAINEIS_REAIS.indexOf(m), emoji: p.emoji, cor: p.cor, custom: ehCustom(m) };
   }
   function nomeModulo(id) {
     if (CARD_PADRAO[id]) return cardDe(id).nome;
     var m = MODULOS.filter(function (x) { return x.id === id; })[0];
     return m ? m.nome : '';
   }
-  function cardsOrdenados() { return PAINEIS.map(cardDe).sort(function (a, b) { return a.ordem - b.ordem; }); }
+  function cardsOrdenados() { return paineisTodos().map(cardDe).sort(function (a, b) { return a.ordem - b.ordem; }); }
 
   // Cache das fotos no aparelho (só baixa de novo quando a foto muda).
   var imgPedindo = {};
@@ -1775,9 +1781,9 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       '<button class="chip leve" data-acao="homePers">' + ic('sliders') + '<span style="margin-left:6px">Personalizar</span></button></div>';
     h += '<div class="home-grid">' + cardsOrdenados().map(function (c) {
       garantirImagem(c.imagemId);
-      var url = urlImg(c.imagemId), r = resumoCard(c.modulo);
+      var url = urlImg(c.imagemId), r = c.custom ? { txt: '🚧 Em construção' } : resumoCard(c.modulo);
       var fundo = url ? 'background-image:url(\'' + url + '\')' : 'background:linear-gradient(135deg,' + c.cor + ',' + c.cor + 'aa)';
-      return '<button class="hcard' + (url ? ' com-foto' : '') + '" data-acao="modulo" data-id="' + c.modulo + '" style="' + fundo + '">' +
+      return '<button class="hcard' + (url ? ' com-foto' : '') + '" data-acao="' + (c.custom ? 'cardConstrucao' : 'modulo') + '" data-id="' + c.modulo + '" style="' + fundo + '">' +
         (url ? '' : '<span class="hemoji">' + c.emoji + '</span>') +
         '<span class="hinfo"><b>' + esc(c.nome) + '</b><small>' + esc(c.descricao) + '</small>' +
         '<span class="hres' + (r.alerta ? ' alerta' : '') + (r.carregando ? ' carregando' : '') + '">' + esc(r.txt) + '</span></span></button>';
@@ -1797,28 +1803,41 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
         '<button class="icon-btn mini" data-acao="cardMover" data-id="' + c.modulo + '" data-n="-1"' + (i === 0 ? ' disabled style="opacity:.3"' : '') + ' title="Subir">' + ic('up') + '</button>' +
         '<button class="icon-btn mini" data-acao="cardMover" data-id="' + c.modulo + '" data-n="1"' + (i === L.length - 1 ? ' disabled style="opacity:.3"' : '') + ' title="Descer">' + ic('down') + '</button></div>';
     });
-    abrirSheet(h + '</div>');
+    abrirSheet(h + '</div><div class="acoes" style="margin-top:14px"><button class="btn pri" data-acao="cardNovo">' + ic('plus') + 'Novo card</button></div>' +
+      '<p class="muted" style="font-size:12px;text-align:center;margin:10px 0 0">Cards novos aparecem como “Em construção” até o painel ser implementado.</p>');
+  }
+  function abrirConstrucao(m) {
+    var c = cardDe(m), url = urlImg(c.imagemId);
+    var h = '<h2><span>' + esc(c.nome) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="card-prev" style="' + (url ? 'background-image:url(\'' + url + '\')' : 'background:linear-gradient(135deg,' + c.cor + ',' + c.cor + 'aa)') + '">' + (url ? '' : '<span class="hemoji">' + c.emoji + '</span>') +
+      '<span class="hinfo"><b>' + esc(c.nome) + '</b><small>' + esc(c.descricao) + '</small><span class="hres">🚧 Em construção</span></span></div>';
+    h += '<div class="secao" style="margin-top:4px"><span>Ideias para este painel</span></div>';
+    h += c.notas ? '<p style="margin:0 0 14px;white-space:pre-wrap;line-height:1.5">' + esc(c.notas) + '</p>' : '<p class="muted" style="margin:0 0 14px">Nenhuma ideia anotada ainda. Toque em Editar e escreva o que esse painel deve ter — isso vira o roteiro na hora de implementar.</p>';
+    h += '<div class="acoes g2"><button class="btn sec" data-acao="cardEditar" data-id="' + m + '">' + ic('edit') + 'Editar</button><button class="btn perigo" data-acao="cardExcluir" data-id="' + m + '">' + ic('trash') + 'Excluir</button></div>';
+    abrirSheet(h);
   }
   var FC = null;
   function editarCard(m) {
+    if (!m) { FC = { modulo: '', novo: true, custom: true, nome: '', descricao: '', notas: '', imagem: null, preview: '', remover: false, tinhaFoto: false }; renderEditarCard(); return; }
     var c = cardDe(m);
-    FC = { modulo: m, nome: c.nome, descricao: c.descricao, imagem: null, preview: urlImg(c.imagemId), remover: false, tinhaFoto: !!c.imagemId };
+    FC = { modulo: m, custom: c.custom, nome: c.nome, descricao: c.descricao, notas: c.notas, imagem: null, preview: urlImg(c.imagemId), remover: false, tinhaFoto: !!c.imagemId };
     renderEditarCard();
   }
   function renderEditarCard() {
-    var f = FC, p = CARD_PADRAO[f.modulo];
-    var h = '<h2><span>' + esc(p.nome) + '</span><button class="icon-btn" data-acao="homePers">' + ic('x') + '</button></h2>';
+    var f = FC, p = CARD_PADRAO[f.modulo] || PADRAO_CUSTOM;
+    var h = '<h2><span>' + (f.novo ? 'Novo card' : esc(f.custom ? (f.nome || 'Card') : p.nome)) + '</span><button class="icon-btn" data-acao="homePers">' + ic('x') + '</button></h2>';
     h += '<div class="card-prev" style="' + (f.preview ? 'background-image:url(\'' + f.preview + '\')' : 'background:linear-gradient(135deg,' + p.cor + ',' + p.cor + 'aa)') + '">' +
       (f.preview ? '' : '<span class="hemoji">' + p.emoji + '</span>') + '<span class="hinfo"><b>' + esc(f.nome || p.nome) + '</b><small>' + esc(f.descricao) + '</small></span></div>';
     h += '<div class="acoes g2" style="margin-bottom:14px"><label class="btn sec" style="cursor:pointer">' + ic('image') + (f.preview ? 'Trocar foto' : 'Escolher foto') + '<input type="file" accept="image/*" hidden id="cardFoto"></label>' +
       (f.preview ? '<button class="btn perigo" data-acao="cardSemFoto">' + ic('trash') + 'Remover foto</button>' : '<span></span>') + '</div>';
-    h += '<label class="campo"><span>Nome</span><input id="fcNome" maxlength="30" value="' + esc(f.nome) + '" placeholder="' + esc(p.nome) + '" autocomplete="off"></label>';
-    h += '<label class="campo"><span>Descrição</span><input id="fcDesc" maxlength="120" value="' + esc(f.descricao) + '" placeholder="' + esc(p.descricao) + '" autocomplete="off"></label>';
-    h += '<div class="acoes"><button class="btn pri" data-acao="cardSalvar" id="fcSalvar">' + ic('check') + 'Salvar</button>' +
-      '<button class="btn sec" data-acao="cardPadrao">Voltar ao padrão</button></div>';
+    h += '<label class="campo"><span>Nome</span><input id="fcNome" maxlength="30" value="' + esc(f.nome) + '" placeholder="' + esc(p.nome || 'Ex.: Saúde, Veículos, Viagens') + '" autocomplete="off"></label>';
+    h += '<label class="campo"><span>Descrição</span><input id="fcDesc" maxlength="120" value="' + esc(f.descricao) + '" placeholder="' + esc(p.descricao || 'Uma frase sobre o painel') + '" autocomplete="off"></label>';
+    if (f.custom) h += '<label class="campo"><span>Ideias para este painel (opcional)</span><textarea id="fcNotas" maxlength="3000" rows="4" placeholder="O que esse painel deve controlar? Ex.: consultas e exames com data, remédios com horário, vacinas…">' + esc(f.notas) + '</textarea></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="cardSalvar" id="fcSalvar">' + ic('check') + (f.novo ? 'Criar card' : 'Salvar') + '</button>' +
+      (f.custom ? (f.novo ? '' : '<button class="btn perigo" data-acao="cardExcluir" data-id="' + f.modulo + '">' + ic('trash') + 'Excluir card</button>') : '<button class="btn sec" data-acao="cardPadrao">Voltar ao padrão</button>') + '</div>';
     abrirSheet(h);
   }
-  function lerFC() { var n = $('#fcNome'), d = $('#fcDesc'); if (n && FC) { FC.nome = n.value; FC.descricao = d.value; } }
+  function lerFC() { var n = $('#fcNome'), d = $('#fcDesc'), t = $('#fcNotas'); if (n && FC) { FC.nome = n.value; FC.descricao = d.value; if (t) FC.notas = t.value; } }
   function fotoCard(file) {
     if (!file || file.type.indexOf('image/') !== 0) return toast('Escolha uma imagem', true);
     lerFC();
@@ -1838,16 +1857,19 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   }
   function salvarCard(padrao) {
     lerFC();
-    var f = FC, p = CARD_PADRAO[f.modulo];
+    var f = FC, p = CARD_PADRAO[f.modulo] || PADRAO_CUSTOM;
+    if (f.custom && !f.nome.trim()) return toast('Dê um nome ao card', true);
     var dados = padrao ? { modulo: f.modulo, nome: '', descricao: '', removerImagem: true }
       : { modulo: f.modulo, nome: f.nome.trim() === p.nome ? '' : f.nome.trim(), descricao: f.descricao.trim() === p.descricao ? '' : f.descricao.trim(), imagem: f.imagem, removerImagem: f.remover };
+    if (f.custom) dados.notas = f.notas || '';
     var b = $('#fcSalvar'); b.disabled = true; b.textContent = f.imagem ? 'Enviando foto…' : 'Salvando…';
     var previa = f.preview;
-    mutar('cardSalvar', dados, null, 'c').then(function (d) {
+    mutar(f.novo ? 'cardCriar' : 'cardSalvar', dados, null, 'c').then(function (d) {
       // guarda a foto nova direto no aparelho, sem baixar de volta
-      var novo = d.cards.filter(function (x) { return x.modulo === f.modulo; })[0];
+      var mod = f.novo ? d.criado : f.modulo;
+      var novo = d.cards.filter(function (x) { return x.modulo === mod; })[0];
       if (novo && novo.imagemId && f.imagem) { store('cm_img_' + novo.imagemId, previa); memImg[novo.imagemId] = previa; }
-      pintarModulos(); FC = null; abrirPersonalizar(); toast(padrao ? 'Card voltou ao padrão' : 'Card atualizado');
+      pintarModulos(); FC = null; abrirPersonalizar(); toast(padrao ? 'Card voltou ao padrão' : f.novo ? 'Card criado 🚧' : 'Card atualizado');
     }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
   }
   function moverCard(m, n) {
@@ -2114,6 +2136,17 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       case 'cardSemFoto': lerFC(); FC.imagem = null; FC.preview = ''; FC.remover = FC.tinhaFoto; renderEditarCard(); break;
       case 'cardSalvar': salvarCard(false); break;
       case 'cardPadrao': salvarCard(true); break;
+      case 'cardNovo': editarCard(null); setTimeout(function () { var e = $('#fcNome'); if (e) e.focus(); }, 250); break;
+      case 'cardConstrucao': abrirConstrucao(id); break;
+      case 'cardExcluir':
+        var ce = cardDe(id);
+        abrirSheet('<h2><span>Excluir card?</span></h2><p class="muted" style="margin-top:-6px">' + esc(ce.nome) + (ce.notas ? ' · as ideias anotadas também serão apagadas.' : '') + '</p><div class="acoes">' +
+          '<button class="btn perigo" data-acao="cardExcluirOk" data-id="' + id + '">' + ic('trash') + 'Excluir</button><button class="btn sec" data-acao="cardConstrucao" data-id="' + id + '">Cancelar</button></div>');
+        break;
+      case 'cardExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar('cardExcluir', { modulo: id }, null, 'c').then(function () { fecharSheet(); toast('Card excluído'); }, function () {});
+        break;
       // pessoas (financeiro)
       case 'pessoa': S.pessoa = id; render(); window.scrollTo(0, 0); break;
       case 'pessoasGerir': gerirPessoas(); break;
