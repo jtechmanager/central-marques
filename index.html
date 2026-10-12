@@ -396,6 +396,16 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
 .dsem button { height: 48px; border-radius: 14px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
 .dsem button.on { background: var(--accent); color: var(--on-accent); }
 
+/* ---------- pessoas (de quem) ---------- */
+.tag.pessoa { background: var(--accent-soft); color: var(--accent); }
+.chip.leve { padding: 8px 12px; display: inline-flex; align-items: center; }
+.chip.leve svg { width: 16px; height: 16px; }
+.chips.quem { padding-bottom: 0; flex-wrap: wrap; }
+.pessoa-linha { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border-bottom: 1px solid var(--border); text-align: left; }
+.pessoa-linha:last-child { border-bottom: 0; }
+.pessoa-linha .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pessoa-linha small { font-size: 12px; }
+
 /* ---------- documentos ---------- */
 .tag.okv { background: var(--green-soft); color: var(--green); }
 .doc-item .meta .num { letter-spacing: .04em; }
@@ -547,7 +557,8 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   var S = { token: store('cm_token') || null, d: null, mes: null, view: store('cm_view') || 'mes', filtro: 'todos', histFiltro: 'todos', fila: Promise.resolve(), pend: 0,
     modulo: ['tar', 'hab', 'doc'].indexOf(store('cm_mod')) >= 0 ? store('cm_mod') : 'fin', t: null, col: store('cm_col') || 'A fazer', tagF: '',
     h: null, hview: store('cm_hview') || 'hoje', hdia: null,
-    x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {} };
+    x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {},
+    pessoa: 'Higor' }; // ao abrir, sempre só os lançamentos do Higor
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -745,7 +756,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     if (S.modulo === 'hab') { if (S.h) renderHab(); return; }
     if (S.modulo === 'doc') { if (S.x) renderDoc(); return; }
     if (!S.d) return;
-    var vencidos = S.d.lancamentos.filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
+    var vencidos = lancs().filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
       return VIEWS.map(function (v) {
         var b = v.id === 'pend' && vencidos ? '<span class="badge">' + vencidos + '</span>' : '';
@@ -757,7 +768,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     $('#subnav').innerHTML = navHtml();
     $('#subnav').hidden = false;
     var fn = { mes: vMes, pend: vPend, prev: vPrev, anal: vAnal, hist: vHist }[S.view] || vMes;
-    $('#view').innerHTML = fn();
+    $('#view').innerHTML = (S.view === 'hist' ? '' : pessoaChips()) + fn();
   }
 
   function mesNav() {
@@ -779,6 +790,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       tags.push('<span>' + (l.tipo === 'Receita' ? 'Recebido' : 'Pago') + (l.dataPagamento ? ' ' + dataBR(l.dataPagamento) : '') + '</span>');
     }
     tags.push('<span>' + esc(l.categoria) + '</span>');
+    if (l.titular && l.titular !== padraoPessoa()) tags.push('<span class="tag pessoa">' + esc(l.titular) + '</span>');
     if (l.recorrencia === 'Parcelado') tags.push('<span class="tag">' + l.parcela + '/' + l.totalParcelas + '</span>');
     if (l.recorrencia === 'Fixo') tags.push('<span class="tag" title="Fixo">' + ic('repeat') + (l.repetir ? 'repete' : 'fixo') + '</span>');
     if (l.anexoId) tags.push('<span class="tag">' + ic('clip') + '</span>');
@@ -788,12 +800,50 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       '<button class="check" data-acao="pagar" data-id="' + l.id + '" aria-label="' + (pago ? 'Marcar como pendente' : 'Marcar como pago') + '">' + ic('check') + '</button></div>';
   }
 
+  /* ----- de quem (pessoa) ----- */
+  function padraoPessoa() { return (S.d && S.d.titularPadrao) || 'Higor'; }
+  function lancs() {
+    var p = S.pessoa;
+    return p === '*' ? S.d.lancamentos : S.d.lancamentos.filter(function (l) { return (l.titular || padraoPessoa()) === p; });
+  }
+  function pessoas() {
+    var c = {}; c[padraoPessoa()] = 0;
+    S.d.lancamentos.forEach(function (l) { var t = l.titular || padraoPessoa(); c[t] = (c[t] || 0) + 1; });
+    return Object.keys(c).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || c[b] - c[a] || a.localeCompare(b); });
+  }
+  function pessoaChips() {
+    var P = pessoas();
+    if (P.length < 2 && S.pessoa !== '*') return '';
+    return '<div class="chips pessoas" style="margin-top:2px">' + P.map(function (p) {
+      return '<button class="chip' + (S.pessoa === p ? ' ativo' : '') + '" data-acao="pessoa" data-id="' + esc(p) + '">' + esc(p) + '</button>';
+    }).join('') + '<button class="chip' + (S.pessoa === '*' ? ' ativo' : '') + '" data-acao="pessoa" data-id="*">👥 Todos</button>' +
+      '<button class="chip leve" data-acao="pessoasGerir" title="Renomear">' + ic('edit') + '</button></div>';
+  }
+  function gerirPessoas() {
+    var P = pessoas();
+    var h = '<h2><span>Pessoas</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>' +
+      '<p class="muted" style="margin-top:-6px;font-size:14px">Os nomes nascem quando você salva um lançamento com “+ Outro”. Para corrigir ou juntar nomes, renomeie: a troca vale para todos os lançamentos.</p><div class="lista">';
+    P.forEach(function (p) {
+      var n = S.d.lancamentos.filter(function (l) { return (l.titular || padraoPessoa()) === p; }).length;
+      h += '<div class="hab-item"><span class="hab-ic">' + esc(p.charAt(0).toUpperCase()) + '</span><div class="corpo"><div class="desc">' + esc(p) + (p === padraoPessoa() ? ' <span class="tag">padrão</span>' : '') + '</div><div class="meta">' + n + ' lançamento(s)</div></div>' +
+        (n ? '<button class="icon-btn" data-acao="pessoaRenomear" data-id="' + esc(p) + '" title="Renomear">' + ic('edit') + '</button>' : '') + '</div>';
+    });
+    abrirSheet(h + '</div>');
+  }
+  function renomearPessoa(de) {
+    abrirSheet('<h2><span>Renomear “' + esc(de) + '”</span><button class="icon-btn" data-acao="pessoasGerir">' + ic('x') + '</button></h2>' +
+      '<label class="campo"><span>Novo nome</span><input id="pNovo" maxlength="40" value="' + esc(de) + '" autocomplete="off" list="dlPes"><datalist id="dlPes">' + pessoas().filter(function (p) { return p !== de; }).map(function (p) { return '<option value="' + esc(p) + '">'; }).join('') + '</datalist></label>' +
+      '<p class="muted" style="font-size:13px;margin-top:-6px">Se digitar um nome que já existe, os lançamentos são juntados nele.</p>' +
+      '<div class="acoes"><button class="btn pri" data-acao="pessoaRenomearOk" data-id="' + esc(de) + '">' + ic('check') + 'Renomear em todos</button></div>');
+    setTimeout(function () { var e = $('#pNovo'); if (e) { e.focus(); e.select(); } }, 200);
+  }
+
   function vazio(icone, titulo, txt) { return '<div class="vazio-box">' + ic(icone) + '<b>' + titulo + '</b>' + (txt || '') + '</div>'; }
   function ordenar(a, b) { return a.vencimento < b.vencimento ? -1 : a.vencimento > b.vencimento ? 1 : (a.tipo === b.tipo ? 0 : a.tipo === 'Receita' ? -1 : 1); }
 
   /* ----- Mês ----- */
   function vMes() {
-    var L = S.d.lancamentos.filter(function (l) { return l.mes === S.mes; });
+    var L = lancs().filter(function (l) { return l.mes === S.mes; });
     var R = L.filter(function (l) { return l.tipo === 'Receita'; }), D = L.filter(function (l) { return l.tipo === 'Despesa'; });
     var rec = soma(R), desp = soma(D);
     var dPago = soma(D.filter(function (l) { return l.status === 'Pago'; })), dPend = desp - dPago;
@@ -827,7 +877,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
   /* ----- Pendentes ----- */
   function vPend() {
     var hoje = S.d.hoje, atual = S.d.mesAtual, prox = somarMes(atual, 1);
-    var P0 = S.d.lancamentos.filter(function (l) { return l.status === 'Pendente'; }).sort(ordenar);
+    var P0 = lancs().filter(function (l) { return l.status === 'Pendente'; }).sort(ordenar);
     var venc = P0.filter(function (l) { return l.vencimento < hoje; });
     var este = P0.filter(function (l) { return l.vencimento >= hoje && l.mes <= atual; });
     var seg = P0.filter(function (l) { return l.mes === prox; });
@@ -848,7 +898,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     var atual = S.d.mesAtual, meses = [], max = 1;
     for (var i = 0; i < 6; i++) {
       var m = somarMes(atual, i);
-      var L = S.d.lancamentos.filter(function (l) { return l.mes === m; });
+      var L = lancs().filter(function (l) { return l.mes === m; });
       var r = soma(L.filter(function (l) { return l.tipo === 'Receita'; })), d = soma(L.filter(function (l) { return l.tipo === 'Despesa'; }));
       var pend = soma(L.filter(function (l) { return l.tipo === 'Despesa' && l.status === 'Pendente'; }));
       var fim = L.filter(function (l) { return l.recorrencia === 'Parcelado' && l.parcela === l.totalParcelas; });
@@ -871,9 +921,9 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
 
   /* ----- Análise ----- */
   function vAnal() {
-    var L = S.d.lancamentos.filter(function (l) { return l.mes === S.mes && l.tipo === 'Despesa'; });
+    var L = lancs().filter(function (l) { return l.mes === S.mes && l.tipo === 'Despesa'; });
     var tot = soma(L);
-    var ant = soma(S.d.lancamentos.filter(function (l) { return l.mes === somarMes(S.mes, -1) && l.tipo === 'Despesa'; }));
+    var ant = soma(lancs().filter(function (l) { return l.mes === somarMes(S.mes, -1) && l.tipo === 'Despesa'; }));
     var h = mesNav();
 
     var comp = '';
@@ -896,9 +946,24 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     var top = L.slice().sort(function (a, b) { return b.valor - a.valor; }).slice(0, 5);
     if (top.length) h += '<div class="secao"><span>Maiores gastos</span></div><div class="lista">' + top.map(function (l) { return itemHtml(l); }).join('') + '</div>';
 
+    // Por pessoa (sempre todas as pessoas, no mês escolhido)
+    if (pessoas().length > 1) {
+      var doMes = S.d.lancamentos.filter(function (l) { return l.mes === S.mes; }), pp = {};
+      doMes.forEach(function (l) { var t = l.titular || padraoPessoa(); pp[t] = pp[t] || { r: 0, d: 0, pend: 0 }; if (l.tipo === 'Receita') pp[t].r += l.valor; else { pp[t].d += l.valor; if (l.status === 'Pendente') pp[t].pend += l.valor; } });
+      var nomes = Object.keys(pp).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || pp[b].d - pp[a].d; });
+      if (nomes.length) {
+        h += '<div class="secao"><span>Por pessoa · ' + nomes.length + '</span></div><div class="card" style="padding:4px 14px">' + nomes.map(function (t) {
+          var x = pp[t], s = x.r - x.d;
+          return '<button class="pessoa-linha" data-acao="pessoa" data-id="' + esc(t) + '"><span class="hab-ic" style="width:36px;height:36px;font-size:15px;font-weight:700">' + esc(t.charAt(0).toUpperCase()) + '</span>' +
+            '<span class="corpo"><b>' + esc(t) + '</b><small class="muted">Receitas ' + brl(x.r) + ' · Despesas ' + brl(x.d) + (x.pend ? ' · a pagar ' + brl(x.pend) : '') + '</small></span>' +
+            '<b class="num" style="color:' + (s >= 0 ? 'var(--green)' : 'var(--red)') + '">' + brl(s) + '</b></button>';
+        }).join('') + '</div>';
+      }
+    }
+
     // Parcelamentos ativos (global)
     var grupos = {};
-    S.d.lancamentos.forEach(function (l) { if (l.recorrencia === 'Parcelado' && l.grupo) (grupos[l.grupo] = grupos[l.grupo] || []).push(l); });
+    lancs().forEach(function (l) { if (l.recorrencia === 'Parcelado' && l.grupo) (grupos[l.grupo] = grupos[l.grupo] || []).push(l); });
     var ativos = Object.keys(grupos).map(function (g) {
       var x = grupos[g].sort(function (a, b) { return a.parcela - b.parcela; });
       var ult = x[x.length - 1];
@@ -968,7 +1033,8 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       (l.recorrencia === 'Parcelado' ? '<span class="tag">Parcela ' + l.parcela + ' de ' + l.totalParcelas + '</span>' : '') +
       (l.recorrencia === 'Fixo' ? '<span class="tag">' + ic('repeat') + 'Fixo mensal</span>' : '') + '</div></div>';
     h += '<div class="det-grid"><div><small>Vencimento</small><b>' + dataBRc(l.vencimento) + '</b></div><div><small>Categoria</small><b>' + esc(l.categoria) + '</b></div>' +
-      '<div><small>Tipo</small><b>' + l.tipo + '</b></div><div><small>Mês</small><b style="text-transform:capitalize">' + nomeMes(l.mes) + '</b></div></div>';
+      '<div><small>Tipo</small><b>' + l.tipo + '</b></div><div><small>Mês</small><b style="text-transform:capitalize">' + nomeMes(l.mes) + '</b></div>' +
+      '<div style="grid-column:1/-1"><small>De quem</small><b>' + esc(l.titular || padraoPessoa()) + '</b></div></div>';
     if (l.obs) h += '<p class="muted" style="margin:0 0 14px;white-space:pre-wrap">' + esc(l.obs) + '</p>';
     if (l.recorrencia === 'Fixo') {
       h += '<button class="toggle-linha" data-acao="repetir" data-id="' + l.id + '" style="width:100%;text-align:left"><span><b>Repetir no próximo mês</b><small>' +
@@ -1001,12 +1067,12 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
       var ult = new Date(+S.mes.slice(0, 4), +S.mes.slice(5, 7), 0).getDate();
       venc = S.mes + '-' + ('0' + Math.min(+S.d.hoje.slice(8, 10), ult)).slice(-2);
     }
-    FORM = { modo: 'novo', tipo: tipo || 'Despesa', recorrencia: 'Unico', descricao: '', cents: 0, categoria: '', vencimento: venc, repetir: true, parcela: 1, total: 2, obs: '', jaPago: false };
+    FORM = { modo: 'novo', tipo: tipo || 'Despesa', recorrencia: 'Unico', descricao: '', cents: 0, categoria: '', vencimento: venc, repetir: true, parcela: 1, total: 2, obs: '', jaPago: false, titular: S.pessoa !== '*' ? S.pessoa : padraoPessoa(), novaPessoa: false };
     renderForm();
   }
   function editarForm(id) {
     var l = acharL(id);
-    FORM = { modo: 'editar', id: id, tipo: l.tipo, recorrencia: l.recorrencia, descricao: l.descricao, cents: Math.round(l.valor * 100), categoria: l.categoria, vencimento: l.vencimento, obs: l.obs, grupo: !!l.grupo, aplicarProximos: false, parcela: l.parcela, total: l.totalParcelas };
+    FORM = { modo: 'editar', id: id, tipo: l.tipo, recorrencia: l.recorrencia, descricao: l.descricao, cents: Math.round(l.valor * 100), categoria: l.categoria, vencimento: l.vencimento, obs: l.obs, grupo: !!l.grupo, aplicarProximos: false, parcela: l.parcela, total: l.totalParcelas, titular: l.titular || padraoPessoa(), novaPessoa: false };
     renderForm();
   }
   function catsDo(tipo) { return S.d.categorias.filter(function (c) { return c.tipo === tipo; }); }
@@ -1024,6 +1090,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     h += '<label class="campo"><span>Descrição</span><input id="fDesc" list="fSug" maxlength="120" autocomplete="off" value="' + esc(f.descricao) + '" placeholder="' + (f.tipo === 'Receita' ? 'Ex.: Salário' : 'Ex.: Aluguel, Internet, Celular') + '"><datalist id="fSug">' + Object.keys(sugest).slice(0, 50).map(function (s) { return '<option value="' + esc(s) + '">'; }).join('') + '</datalist></label>';
     h += '<div class="duas"><label class="campo"><span>Vencimento</span><input type="date" id="fVenc" value="' + f.vencimento + '"></label>' +
       '<label class="campo"><span>Categoria</span><select id="fCat">' + cats.map(function (c) { return '<option' + (c.nome === f.categoria ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join('') + '</select></label></div>';
+    h += campoPessoa(f);
 
     if (novo) {
       h += '<label class="campo" style="margin-bottom:6px"><span>Como se repete?</span></label><div class="seg">' + [['Unico', 'Único'], ['Fixo', 'Fixo mensal'], ['Parcelado', 'Parcelado']].map(function (r) {
@@ -1051,6 +1118,12 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     var ini = f.vencimento.slice(0, 7), fim = somarMes(ini, n - 1);
     return 'Gera ' + n + ' parcela(s): ' + f.parcela + '/' + f.total + ' em ' + mesCurto(ini) + ' até ' + f.total + '/' + f.total + ' em <b>' + mesCurto(fim) + '</b>' + (f.cents ? ' · total ' + brl(n * f.cents / 100) : '');
   }
+  function campoPessoa(f) {
+    var P = pessoas(); if (P.indexOf(f.titular) < 0 && !f.novaPessoa) P.push(f.titular);
+    return '<div class="campo"><span>De quem</span><div class="chips quem">' + P.map(function (p) { return '<button class="chip' + (!f.novaPessoa && f.titular === p ? ' ativo' : '') + '" data-acao="fPessoa" data-v="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') +
+      '<button class="chip' + (f.novaPessoa ? ' ativo' : '') + '" data-acao="fPessoaNova">+ Outro</button></div>' +
+      (f.novaPessoa ? '<input id="fNovaPessoa" maxlength="40" placeholder="Nome da pessoa ou empresa" autocomplete="off" style="margin-top:8px">' : '') + '</div>';
+  }
   function lerForm() {
     if (!FORM) return;
     var g = function (id) { var e = document.getElementById(id); return e ? e.value : null; };
@@ -1060,6 +1133,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     if (g('fObs') !== null) FORM.obs = g('fObs');
     if (g('fParc') !== null) FORM.parcela = Math.max(1, parseInt(g('fParc'), 10) || 1);
     if (g('fTot') !== null) FORM.total = Math.max(2, parseInt(g('fTot'), 10) || 2);
+    if (FORM.novaPessoa && g('fNovaPessoa') !== null) FORM.nomeNovo = g('fNovaPessoa').replace(/\s+/g, ' ').trim();
   }
   function salvarForm() {
     lerForm();
@@ -1067,6 +1141,11 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     if (!f.cents) return toast('Informe o valor', true);
     if (!f.descricao.trim()) return toast('Informe a descrição', true);
     if (!f.vencimento) return toast('Informe o vencimento', true);
+    if (f.novaPessoa) {
+      if (!f.nomeNovo) return toast('Digite o nome em “De quem”', true);
+      var igual = pessoas().filter(function (p) { return p.toLowerCase() === f.nomeNovo.toLowerCase(); })[0];
+      f.titular = igual || f.nomeNovo; // evita duplicar "pai" e "Pai"
+    }
     if (f.modo === 'novo' && f.recorrencia === 'Parcelado' && f.parcela > f.total) return toast('Parcela atual maior que o total', true);
     var btn = $('#fSalvar'); btn.disabled = true; btn.innerHTML = 'Salvando…';
     var dados = { descricao: f.descricao.trim(), valor: f.cents / 100, categoria: f.categoria, vencimento: f.vencimento, obs: f.obs };
@@ -1074,8 +1153,8 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
     if (f.modo === 'novo') {
       acao = 'criar';
       dados.tipo = f.tipo; dados.recorrencia = f.recorrencia; dados.repetir = f.repetir; dados.jaPago = f.jaPago;
-      dados.parcela = f.parcela; dados.totalParcelas = f.total;
-    } else { acao = 'editar'; dados.id = f.id; dados.aplicarProximos = f.aplicarProximos; }
+      dados.parcela = f.parcela; dados.totalParcelas = f.total; dados.titular = f.titular;
+    } else { acao = 'editar'; dados.id = f.id; dados.aplicarProximos = f.aplicarProximos; dados.titular = f.titular; }
     var novoMes = f.vencimento.slice(0, 7);
     mutar(acao, dados).then(function () {
       fecharSheet();
@@ -1828,6 +1907,23 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // pessoas (financeiro)
+      case 'pessoa': S.pessoa = id; render(); window.scrollTo(0, 0); break;
+      case 'pessoasGerir': gerirPessoas(); break;
+      case 'pessoaRenomear': renomearPessoa(id); break;
+      case 'pessoaRenomearOk':
+        var novoNome = ($('#pNovo').value || '').replace(/\s+/g, ' ').trim();
+        if (!novoNome) { toast('Digite o novo nome', true); break; }
+        if (novoNome === id) { gerirPessoas(); break; }
+        var existente = pessoas().filter(function (p) { return p.toLowerCase() === novoNome.toLowerCase() && p !== id; })[0];
+        el.disabled = true; el.textContent = 'Renomeando…';
+        mutar('renomearPessoa', { de: id, para: existente || novoNome }).then(function () {
+          if (S.pessoa === id) S.pessoa = existente || novoNome;
+          toast('Renomeado para ' + esc(existente || novoNome)); gerirPessoas(); render();
+        }, function () { el.disabled = false; el.textContent = 'Tentar de novo'; });
+        break;
+      case 'fPessoa': lerForm(); FORM.titular = el.getAttribute('data-v'); FORM.novaPessoa = false; renderForm(); break;
+      case 'fPessoaNova': lerForm(); FORM.novaPessoa = true; renderForm(); setTimeout(function () { var e = $('#fNovaPessoa'); if (e) e.focus(); }, 50); break;
       // tarefas
       case 'tCol': S.col = id; store('cm_col', id); render(); window.scrollTo(0, 0); break;
       case 'tTag': S.tagF = id; render(); break;
