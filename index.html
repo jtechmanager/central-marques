@@ -422,6 +422,52 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 .card-prev { min-height: 150px; margin-bottom: 12px; }
 .pers-thumb { width: 52px; height: 52px; flex: none; border-radius: 14px; background-size: cover; background-position: center; font-size: 24px; display: grid; place-items: center; }
 
+/* ---------- mapas mentais ---------- */
+body.mapa-aberto .bottom, body.mapa-aberto .fab { display: none; }
+body.mapa-aberto main { padding-bottom: 0; }
+.mapas-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 4px; }
+@media (min-width: 640px) { .mapas-grid { grid-template-columns: 1fr 1fr; } }
+.mapa-card { display: flex; align-items: flex-start; gap: 4px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 6px 6px 0; }
+.mapa-card .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 10px 6px 10px 16px; }
+.mapa-card .me { font-size: 30px; }
+.mapa-card b { font-size: 17px; }
+.mini-ramos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mini-ramos i { font-style: normal; font-size: 11.5px; font-weight: 600; color: #fff; padding: 2px 8px; border-radius: 99px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapa-cab { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.mapa-tit { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mapa-tit b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 17px; }
+.mapa-tit small { font-size: 12px; }
+.seg.mini { margin: 0; padding: 4px; gap: 4px; }
+.seg.mini button { padding: 7px 10px; display: grid; place-items: center; }
+.seg.mini svg { width: 18px; height: 18px; }
+.mapa-area { position: relative; height: calc(100dvh - 210px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height: 320px; border-radius: 18px; overflow: hidden; touch-action: none;
+  background: var(--surface); box-shadow: var(--shadow);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 22%, transparent) 1px, transparent 1px); background-size: 22px 22px; }
+.mapa-area svg { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+.mapa-area .mno { cursor: pointer; }
+.mapa-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.mapa-zoom button { width: 40px; height: 40px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); }
+.mapa-zoom svg { width: 18px; height: 18px; }
+.mapa-lista { padding: 6px 4px; margin-bottom: 96px; }
+.ml-row { display: flex; align-items: center; gap: 2px; border-radius: 10px; }
+.ml-row.sel { background: var(--amber-soft); }
+.ml-tog { width: 30px; height: 40px; flex: none; color: var(--muted); font-size: 14px; display: grid; place-items: center; }
+.ml-txt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; min-height: 40px; padding: 6px 6px 6px 0; }
+.ml-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.mapa-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; align-items: center; gap: 6px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(0,0,0,.06); overflow-x: auto; }
+@media (min-width: 900px) { .mapa-barra { left: 248px; } .mapa-area { height: calc(100vh - 190px); } }
+.mb-dica { flex: 1; font-size: 13px; color: var(--muted); padding-left: 4px; }
+.mb-btn { flex: 1; min-width: 62px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--text); background: var(--surface-2); }
+.mb-btn svg { width: 20px; height: 20px; }
+.mb-btn.pri { background: var(--accent); color: var(--on-accent); }
+.mb-btn.perigo { color: var(--red); }
+.mb-btn:disabled { opacity: .35; }
+.mb-dica + .mb-btn { flex: none; padding: 8px 14px; background: var(--accent); color: var(--on-accent); }
+.cores { display: flex; flex-wrap: wrap; gap: 8px; }
+.cores button { width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+.cores button.sel { border-color: var(--text); }
+
 /* ---------- compras ---------- */
 .cot { border: 1.5px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; background: var(--surface); }
 .cot.escolhida { border-color: var(--green); background: var(--green-soft); }
@@ -598,6 +644,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     minus: '<path d="M5 12h14"/>',
     cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/>',
     box: '<path d="M21 8l-9-5-9 5 9 5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
+    mind: '<circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="2"/><circle cx="19.5" cy="6" r="2"/><circle cx="4.5" cy="18" r="2"/><circle cx="19.5" cy="18" r="2"/><path d="M9.5 10.5L6.2 7.2M14.5 10.5l3.3-3.3M9.5 13.5l-3.3 3.3M14.5 13.5l3.3 3.3"/>',
+    fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
@@ -628,7 +676,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     x: null, dview: store('cm_dview') || 'docs', titF: '', revelar: {},
     pessoa: 'Higor', // ao abrir, sempre só os lançamentos do Higor
     m: null, mview: store('cm_mview') || 'metas', metPes: 'Higor',
-    k: null, kview: store('cm_kview') || 'Cotando', kLista: '' };
+    k: null, kview: store('cm_kview') || 'Cotando', kLista: '',
+    p: null, mapa: null, mapaVis: store('cm_mapavis') || 'mapa', noSel: null };
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -641,7 +690,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     { id: 'hab', nome: 'Hábitos', ic: 'flame' },
     { id: 'doc', nome: 'Documentos', ic: 'idcard' },
     { id: 'met', nome: 'Metas', ic: 'target' },
-    { id: 'cmp', nome: 'Compras', ic: 'cart' }
+    { id: 'cmp', nome: 'Compras', ic: 'cart' },
+    { id: 'map', nome: 'Mapas mentais', ic: 'mind' }
   ];
 
   /* ================= servidor ================= */
@@ -684,7 +734,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
-    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : /^(compra|cotacao)[A-Z]/.test(acao) ? 'k' : 'd');
+    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : /^(compra|cotacao)[A-Z]/.test(acao) ? 'k' : /^mapa[A-Z]/.test(acao) ? 'p' : 'd');
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
@@ -768,10 +818,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met', 'cmp'].filter(function (m) { return m !== S.modulo; }));
+    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }));
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'] };
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     return api(c[0]).then(function (d) {
@@ -797,10 +847,12 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     $('#tituloTop').textContent = nomeModulo(mod.id);
     document.body.classList.toggle('mod-tar', S.modulo === 'tar');
     document.body.classList.toggle('mod-home', S.modulo === 'home');
+    document.body.classList.toggle('mapa-aberto', S.modulo === 'map' && !!S.mapa);
   }
   function trocarModulo(id) {
     var m = MODULOS.filter(function (x) { return x.id === id; })[0];
     if (!m || m.breve) { toast('Este painel chega em breve'); return; }
+    if (S.modulo === 'map' && id !== 'map') salvarMapaAgora(); // não perde o que foi editado no mapa
     S.modulo = id; store('cm_mod', id);
     pintarModulos(); fecharSheet(); window.scrollTo(0, 0);
     if (id !== 'fin' && !S[CARGA_MOD[id][1]]) {
@@ -832,6 +884,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (S.modulo === 'doc') { if (S.x) renderDoc(); return; }
     if (S.modulo === 'met') { if (S.m) renderMet(); return; }
     if (S.modulo === 'cmp') { if (S.k) renderCmp(); return; }
+    if (S.modulo === 'map') { if (S.p) renderMap(); return; }
     if (!S.d) return;
     var vencidos = lancs().filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
@@ -1750,9 +1803,10 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     hab: { nome: 'Hábitos', descricao: 'Check-in diário e sequências', emoji: '🔥', cor: '#ea580c' },
     doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' },
     met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' },
-    cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' }
+    cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' },
+    map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' }
   };
-  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met', 'cmp'];
+  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'];
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -1808,6 +1862,11 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       if (m === 'hab' && S.h) {
         var A = ativos().filter(function (x) { return agendado(x, S.h.hoje); }), ok = A.filter(function (x) { return feito(x, S.h.hoje); }).length;
         return A.length ? { txt: ok + '/' + A.length + ' hábitos hoje' + (ok === A.length ? ' 🎉' : '') } : { txt: 'Folga hoje' };
+      }
+      if (m === 'map' && S.p) {
+        if (!S.p.mapas.length) return { txt: 'Crie seu primeiro mapa' };
+        var nt = S.p.mapas.reduce(function (s, x) { return s + contarNos(x.dados) - 1; }, 0);
+        return { txt: S.p.mapas.length + ' mapa(s) · ' + nt + ' tópico(s)' };
       }
       if (m === 'cmp' && S.k) {
         var cot = S.k.compras.filter(function (x) { return x.status === 'Cotando'; }), apr = S.k.compras.filter(function (x) { return x.status === 'Aprovado'; });
@@ -2124,6 +2183,310 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   }
   // A movimentação pode ter criado/apagado lançamento: recarrega o Financeiro em segundo plano.
   function atualizarFinanceiroDepois() { api('carregar').then(function (d) { S.d = d; if (S.modulo === 'fin' || S.modulo === 'home') render(); }, function () {}); }
+
+  /* ================= MAPAS MENTAIS ================= */
+  var COR_RAMOS = ['#2563eb', '#db2777', '#16a34a', '#ea580c', '#7c3aed', '#0891b2', '#ca8a04', '#dc2626'];
+  var EMO_MAPA = ['🧠', '💡', '🎯', '📚', '🏠', '💼', '🚀', '✈️', '💰', '🛠️', '❤️', '🌱'];
+  var MZ = { k: 1, tx: 0, ty: 0, ajustar: true }; // zoom/posição do mapa aberto
+  var NH = 38, NH_RAIZ = 48, GAP = 12, HX = 54;
+  function contarNos(n) { return n ? 1 + (n.c || []).reduce(function (s, f) { return s + contarNos(f); }, 0) : 0; }
+  function mapaAtual() { return S.mapa ? S.p.mapas.find(function (m) { return m.id === S.mapa; }) : null; }
+  function acharNo(n, id, pai, prof) {
+    prof = prof || 0;
+    if (n.id === id) return { no: n, pai: pai || null, prof: prof };
+    for (var i = 0; i < (n.c || []).length; i++) { var r = acharNo(n.c[i], id, n, prof + 1); if (r) return r; }
+    return null;
+  }
+  function novoNoId() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function rotNo(n) { var t = (n.t || '').trim() || 'Sem título'; return t.length > 34 ? t.slice(0, 33) + '…' : t; }
+  var _cv = null;
+  function medir(txt, fonte) { _cv = _cv || document.createElement('canvas').getContext('2d'); _cv.font = fonte; return _cv.measureText(txt).width; }
+  var FONTE = ['700 16px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '600 14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '500 13.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif'];
+
+  /** Organiza a árvore: raiz no centro, ramos divididos entre direita e esquerda pela altura. */
+  function layoutMapa(raiz) {
+    var nos = [], linhas = [];
+    function larg(n, prof) {
+      var w = medir(rotNo(n), FONTE[Math.min(prof, 2)]) + (prof === 0 ? 40 : 26) + (n.n ? 20 : 0);
+      return Math.min(prof === 0 ? 280 : 240, Math.max(prof === 0 ? 120 : 56, w));
+    }
+    function alt(n, prof) {
+      n._w = larg(n, prof);
+      var vis = !n.x && n.c && n.c.length;
+      var filhos = vis ? n.c.reduce(function (s, f) { return s + alt(f, prof + 1); }, 0) + GAP * (n.c.length - 1) : 0;
+      n._h = Math.max(prof === 0 ? NH_RAIZ : NH, filhos);
+      return n._h;
+    }
+    function colocar(lista, pai, dir, prof, corPai) {
+      var tot = lista.reduce(function (s, f) { return s + f._h; }, 0) + GAP * (lista.length - 1), cy = pai._y - tot / 2;
+      lista.forEach(function (f) {
+        var cor = prof === 1 ? (f.k || COR_RAMOS[raiz.c.indexOf(f) % COR_RAMOS.length]) : corPai;
+        f._y = cy + f._h / 2; f._x = pai._x + dir * (pai._w / 2 + HX + f._w / 2); f._cor = cor; f._prof = prof; f._dir = dir;
+        nos.push(f); linhas.push({ de: pai, para: f, dir: dir, cor: cor, prof: prof });
+        if (!f.x && f.c && f.c.length) colocar(f.c, f, dir, prof + 1, cor);
+        cy += f._h + GAP;
+      });
+    }
+    alt(raiz, 0);
+    raiz._x = 0; raiz._y = 0; raiz._prof = 0; raiz._cor = 'var(--accent)'; nos.push(raiz);
+    if (!raiz.x && raiz.c && raiz.c.length) {
+      var total = raiz.c.reduce(function (s, f) { return s + f._h; }, 0), dir = [], esq = [], acum = 0;
+      raiz.c.forEach(function (f) { if (acum < total / 2 || !dir.length) { dir.push(f); acum += f._h; } else esq.push(f); });
+      colocar(dir, raiz, 1, 1, null);
+      if (esq.length) colocar(esq, raiz, -1, 1, null);
+    }
+    return { nos: nos, linhas: linhas };
+  }
+
+  function svgMapa() {
+    var mp = mapaAtual(); if (!mp) return '';
+    var L = layoutMapa(mp.dados), h = '';
+    L.linhas.forEach(function (l) {
+      var a = l.de, b = l.para, x1 = a._x + l.dir * a._w / 2, x2 = b._x - l.dir * b._w / 2;
+      h += '<path d="M' + x1 + ' ' + a._y + ' C' + (x1 + l.dir * HX / 2) + ' ' + a._y + ' ' + (x2 - l.dir * HX / 2) + ' ' + b._y + ' ' + x2 + ' ' + b._y + '" stroke="' + l.cor + '" stroke-width="' + (l.prof === 1 ? 3 : 2) + '" fill="none" stroke-linecap="round" opacity=".85"/>';
+    });
+    L.nos.forEach(function (n) {
+      var alto = n._prof === 0 ? NH_RAIZ : NH, x = n._x - n._w / 2, y = n._y - alto / 2, sel = S.noSel === n.id;
+      var fundo = n._prof === 0 ? 'var(--accent)' : n._prof === 1 ? n._cor : 'var(--surface)';
+      var corTxt = n._prof <= 1 ? '#fff' : 'var(--text)';
+      h += '<g class="mno" data-no="' + n.id + '">' +
+        (sel ? '<rect x="' + (x - 4) + '" y="' + (y - 4) + '" width="' + (n._w + 8) + '" height="' + (alto + 8) + '" rx="' + (alto / 2 + 4) + '" fill="none" stroke="var(--amber)" stroke-width="3"/>' : '') +
+        '<rect x="' + x + '" y="' + y + '" width="' + n._w + '" height="' + alto + '" rx="' + (n._prof === 0 ? 16 : alto / 2) + '" fill="' + fundo + '"' + (n._prof >= 2 ? ' stroke="' + n._cor + '" stroke-width="1.6"' : '') + '/>' +
+        '<text x="' + (n._x - (n.n ? 9 : 0)) + '" y="' + (n._y + 5) + '" text-anchor="middle" fill="' + corTxt + '" style="font:' + FONTE[Math.min(n._prof, 2)] + '">' + esc(rotNo(n)) + '</text>' +
+        (n.n ? '<text x="' + (x + n._w - 16) + '" y="' + (n._y + 5) + '" text-anchor="middle" style="font-size:12px">📝</text>' : '') +
+        (n.x && n.c && n.c.length ? '<g><circle cx="' + (n._x + (n._dir || 1) * (n._w / 2 + 14)) + '" cy="' + n._y + '" r="12" fill="' + (n._prof === 0 ? 'var(--accent)' : n._cor) + '"/><text x="' + (n._x + (n._dir || 1) * (n._w / 2 + 14)) + '" y="' + (n._y + 4) + '" text-anchor="middle" fill="#fff" style="font:700 11px system-ui">+' + (contarNos(n) - 1) + '</text></g>' : '') +
+        '</g>';
+    });
+    MZ._nos = L.nos;
+    return h;
+  }
+  function desenharMapa() {
+    var g = $('#mapaG'); if (!g) return;
+    g.innerHTML = svgMapa();
+    if (MZ.ajustar) { ajustarMapa(); MZ.ajustar = false; }
+    aplicarZoom();
+  }
+  function aplicarZoom() { var g = $('#mapaG'); if (g) g.setAttribute('transform', 'translate(' + MZ.tx + ' ' + MZ.ty + ') scale(' + MZ.k + ')'); }
+  function ajustarMapa() {
+    var area = $('#mapaArea'); if (!area || !MZ._nos) return;
+    var W = area.clientWidth, H = area.clientHeight, mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+    MZ._nos.forEach(function (n) { mnx = Math.min(mnx, n._x - n._w / 2 - 30); mxx = Math.max(mxx, n._x + n._w / 2 + 30); mny = Math.min(mny, n._y - 30); mxy = Math.max(mxy, n._y + 30); });
+    // Cabe na tela, mas nunca abaixo de 60% (texto legível no celular); se não couber, centraliza no tópico central.
+    var k = Math.max(0.6, Math.min(1.15, W / (mxx - mnx), H / (mxy - mny)));
+    var cabe = k * (mxx - mnx) <= W + 1;
+    MZ.k = k; MZ.tx = W / 2 - k * (cabe ? (mnx + mxx) / 2 : 0); MZ.ty = H / 2 - k * (mny + mxy) / 2;
+  }
+  function zoomEm(fator, cx, cy) {
+    var area = $('#mapaArea'); if (!area) return;
+    if (cx === undefined) { cx = area.clientWidth / 2; cy = area.clientHeight / 2; }
+    var k2 = Math.max(0.25, Math.min(2.5, MZ.k * fator));
+    MZ.tx = cx - (cx - MZ.tx) * k2 / MZ.k; MZ.ty = cy - (cy - MZ.ty) * k2 / MZ.k; MZ.k = k2;
+    aplicarZoom();
+  }
+
+  function listaMapaHtml(n, prof, cor) {
+    var c = prof === 1 ? cor : cor, tem = n.c && n.c.length;
+    var h = '<div class="ml-row' + (S.noSel === n.id ? ' sel' : '') + '" style="padding-left:' + (8 + prof * 20) + 'px">' +
+      (tem ? '<button class="ml-tog" data-acao="mapTog" data-id="' + n.id + '">' + (n.x ? '▸' : '▾') + '</button>' : '<span class="ml-tog"></span>') +
+      '<button class="ml-txt" data-acao="mapSel" data-id="' + n.id + '"><span class="ml-dot" style="background:' + (prof === 0 ? 'var(--accent)' : c) + '"></span><span' + (prof === 0 ? ' style="font-weight:800;font-size:17px"' : prof === 1 ? ' style="font-weight:700"' : '') + '>' + esc((n.t || '').trim() || 'Sem título') + '</span>' + (n.n ? ' <span>📝</span>' : '') + (n.x && tem ? ' <span class="tag">+' + (contarNos(n) - 1) + '</span>' : '') + '</button></div>';
+    if (tem && !n.x) n.c.forEach(function (f, i) { h += listaMapaHtml(f, prof + 1, prof === 0 ? (f.k || COR_RAMOS[i % COR_RAMOS.length]) : cor); });
+    return h;
+  }
+
+  function barraMapa() {
+    var mp = mapaAtual(), r = S.noSel ? acharNo(mp.dados, S.noSel) : null;
+    if (!r) return '<div class="mb-dica">Toque num tópico para criar, editar ou excluir</div>' +
+      '<button class="mb-btn" data-acao="mapAdd" data-v="filho" data-id="' + mp.dados.id + '">' + ic('plus') + '<span>Novo ramo</span></button>';
+    var tem = r.no.c && r.no.c.length;
+    return '<button class="mb-btn pri" data-acao="mapAdd" data-v="filho" data-id="' + r.no.id + '">' + ic('plus') + '<span>Filho</span></button>' +
+      '<button class="mb-btn" data-acao="mapAdd" data-v="irmao" data-id="' + r.no.id + '"' + (r.pai ? '' : ' disabled') + '>' + ic('layers') + '<span>Irmão</span></button>' +
+      '<button class="mb-btn" data-acao="mapEditar" data-id="' + r.no.id + '">' + ic('edit') + '<span>Editar</span></button>' +
+      '<button class="mb-btn" data-acao="mapTog" data-id="' + r.no.id + '"' + (tem ? '' : ' disabled') + '>' + ic(r.no.x ? 'down' : 'up') + '<span>' + (r.no.x ? 'Expandir' : 'Recolher') + '</span></button>' +
+      '<button class="mb-btn perigo" data-acao="mapDel" data-id="' + r.no.id + '"' + (r.pai ? '' : ' disabled') + '>' + ic('trash') + '<span>Excluir</span></button>';
+  }
+
+  function renderMap() {
+    $('#bottomNav').innerHTML = ''; $('#subnav').hidden = true;
+    document.body.classList.toggle('mapa-aberto', !!S.mapa);
+    var mp = mapaAtual();
+    if (!mp) { S.mapa = null; document.body.classList.remove('mapa-aberto'); $('#view').innerHTML = vListaMapas(); return; }
+    var h = '<div class="mapa-cab"><button class="icon-btn" data-acao="mapFechar" title="Voltar aos mapas">' + ic('left') + '</button>' +
+      '<div class="mapa-tit"><b>' + esc(mp.emoji + ' ' + mp.dados.t) + '</b><small id="mapaStatus" class="muted">' + (MSTATUS || (contarNos(mp.dados) - 1) + ' tópico(s)') + '</small></div>' +
+      '<div class="seg mini"><button data-acao="mapVis" data-v="mapa" class="' + (S.mapaVis === 'mapa' ? 'ativo' : '') + '">' + ic('mind') + '</button><button data-acao="mapVis" data-v="lista" class="' + (S.mapaVis === 'lista' ? 'ativo' : '') + '">' + ic('list') + '</button></div></div>';
+    if (S.mapaVis === 'mapa') {
+      h += '<div class="mapa-area" id="mapaArea"><svg id="mapaSvg" xmlns="http://www.w3.org/2000/svg"><g id="mapaG"></g></svg>' +
+        '<div class="mapa-zoom"><button data-acao="mapZoom" data-v="1.25">' + ic('plus') + '</button><button data-acao="mapZoom" data-v="0.8">' + ic('minus') + '</button><button data-acao="mapFit">' + ic('fit') + '</button></div></div>';
+    } else {
+      h += '<div class="mapa-lista card">' + listaMapaHtml(mp.dados, 0, null) + '</div>';
+    }
+    h += '<div class="mapa-barra" id="mapaBarra">' + barraMapa() + '</div>';
+    $('#view').innerHTML = h;
+    if (S.mapaVis === 'mapa') desenharMapa();
+  }
+  function atualizarMapa() { // redesenha sem perder zoom/posição
+    var b = $('#mapaBarra');
+    if (S.mapaVis === 'mapa' && $('#mapaG')) { desenharMapa(); if (b) b.innerHTML = barraMapa(); }
+    else render();
+  }
+
+  function vListaMapas() {
+    var M = S.p.mapas.slice().sort(function (a, b) { return (b.atualizadoEm || '').localeCompare(a.atualizadoEm || ''); });
+    if (!M.length) return vazio('mind', 'Nenhum mapa mental ainda', 'Toque no <b style="display:inline">+</b> e escreva o tópico central — depois é só ir criando os ramos.');
+    return '<div class="mapas-grid">' + M.map(function (m) {
+      var n = contarNos(m.dados) - 1, ramos = (m.dados.c || []).length;
+      return '<div class="mapa-card"><button class="corpo" data-acao="mapAbrir" data-id="' + m.id + '"><span class="me">' + esc(m.emoji) + '</span><b>' + esc(m.titulo) + '</b>' +
+        '<small class="muted">' + ramos + ' ramo(s) · ' + n + ' tópico(s)' + (m.atualizadoEm ? ' · ' + dataBR(m.atualizadoEm.slice(0, 10)) : '') + '</small>' +
+        '<span class="mini-ramos">' + (m.dados.c || []).slice(0, 4).map(function (f, i) { return '<i style="background:' + (f.k || COR_RAMOS[i % COR_RAMOS.length]) + '">' + esc(rotNo(f)) + '</i>'; }).join('') + '</span></button>' +
+        '<button class="icon-btn mini" data-acao="mapMenu" data-id="' + m.id + '" title="Opções">' + ic('edit') + '</button></div>';
+    }).join('') + '</div>';
+  }
+
+  /* ----- salvar (fila própria: a árvore local é a fonte da verdade) ----- */
+  var MSTATUS = '', mapaTimer = null, mapaFila = Promise.resolve(), mapaSujo = false;
+  function statusMapa(t) { MSTATUS = t; var e = $('#mapaStatus'); if (e) e.textContent = t; }
+  function agendarSalvarMapa() { mapaSujo = true; statusMapa('Salvando…'); clearTimeout(mapaTimer); mapaTimer = setTimeout(salvarMapaAgora, 700); }
+  function limparArvore(n) { var o = { id: n.id, t: n.t }; if (n.n) o.n = n.n; if (n.k) o.k = n.k; if (n.x) o.x = 1; if (n.c && n.c.length) o.c = n.c.map(limparArvore); return o; }
+  function salvarMapaAgora() {
+    clearTimeout(mapaTimer);
+    var mp = mapaAtual(); if (!mp || !mapaSujo) return mapaFila;
+    mapaSujo = false;
+    var dados = { id: mp.id, titulo: mp.dados.t, emoji: mp.emoji, dados: limparArvore(mp.dados) };
+    mapaFila = mapaFila.then(function () { return api('mapaSalvar', dados); }).then(function (r) {
+      mp.titulo = dados.titulo; mp.atualizadoEm = r.salvoEm;
+      if (!mapaSujo) statusMapa('Salvo ✓');
+    }, function (e) { mapaSujo = true; statusMapa('Não salvou — toque em ‹ para tentar de novo'); if (e.message !== 'sessao') toast(esc(e.message), true); });
+    return mapaFila;
+  }
+
+  /* ----- editor de tópico ----- */
+  var FN = null;
+  function editorNo(modo, id) {
+    var mp = mapaAtual(), r = acharNo(mp.dados, id);
+    FN = { modo: modo, id: id, t: modo === 'editar' ? r.no.t : '', n: modo === 'editar' ? (r.no.n || '') : '', k: modo === 'editar' ? (r.no.k || '') : '', prof: modo === 'editar' ? r.prof : modo === 'filho' ? r.prof + 1 : r.prof, emoji: mp.emoji };
+    renderEditorNo();
+    setTimeout(function () { var e = $('#fnTxt'); if (e) { e.focus(); e.select(); } }, 200);
+  }
+  function renderEditorNo() {
+    var f = FN, mp = mapaAtual(), alvo = acharNo(mp.dados, f.id);
+    var tit = f.modo === 'editar' ? (f.prof === 0 ? 'Tópico central' : 'Editar tópico') : f.modo === 'filho' ? 'Novo tópico em “' + rotNo(alvo.no) + '”' : 'Novo tópico ao lado';
+    var h = '<h2><span>' + esc(tit) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<label class="campo"><span>Texto</span><input id="fnTxt" maxlength="200" value="' + esc(f.t) + '" autocomplete="off" enterkeyhint="done" placeholder="Escreva a ideia"></label>';
+    if (f.prof === 0) h += '<div class="campo"><span>Ícone do mapa</span><div class="emojis">' + EMO_MAPA.map(function (e) { return '<button class="' + (f.emoji === e ? 'sel' : '') + '" data-acao="fnEmoji" data-v="' + e + '">' + e + '</button>'; }).join('') + '</div></div>';
+    if (f.prof === 1) {
+      var idx = f.modo === 'editar' ? mp.dados.c.indexOf(alvo.no) : (mp.dados.c || []).length, padrao = COR_RAMOS[(idx < 0 ? 0 : idx) % COR_RAMOS.length];
+      h += '<div class="campo"><span>Cor do ramo</span><div class="cores">' + COR_RAMOS.map(function (c) { return '<button class="' + ((f.k || padrao) === c ? 'sel' : '') + '" data-acao="fnCor" data-v="' + c + '" style="background:' + c + '"></button>'; }).join('') + '</div></div>';
+    }
+    h += '<label class="campo"><span>Nota (opcional)</span><textarea id="fnNota" maxlength="2000" rows="3" placeholder="Detalhes, links, lembretes…">' + esc(f.n) + '</textarea></label>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fnSalvar">' + ic('check') + 'Salvar</button>' +
+      (f.modo !== 'editar' ? '<button class="btn sec" data-acao="fnSalvar" data-v="outro">' + ic('plus') + 'Salvar e criar outro</button>' : '') + '</div>';
+    abrirSheet(h);
+  }
+  function salvarNo(outro) {
+    var f = FN, mp = mapaAtual();
+    f.t = ($('#fnTxt').value || '').replace(/\s+/g, ' ').trim(); f.n = $('#fnNota').value || '';
+    if (!f.t) return toast('Escreva o texto do tópico', true);
+    var r = acharNo(mp.dados, f.id); if (!r) return fecharSheet();
+    var no;
+    if (f.modo === 'editar') {
+      no = r.no; no.t = f.t; if (f.n) no.n = f.n; else delete no.n;
+      if (f.prof === 1 && f.k) no.k = f.k;
+      if (f.prof === 0) { mp.emoji = f.emoji; mp.titulo = f.t; }
+    } else {
+      no = { id: novoNoId(), t: f.t }; if (f.n) no.n = f.n; if (f.prof === 1 && f.k) no.k = f.k;
+      if (f.modo === 'filho') { r.no.c = r.no.c || []; r.no.c.push(no); delete r.no.x; }
+      else { var irm = r.pai.c; irm.splice(irm.indexOf(r.no) + 1, 0, no); }
+    }
+    S.noSel = no.id;
+    agendarSalvarMapa();
+    if (outro) { FN = { modo: 'irmao', id: no.id, t: '', n: '', k: '', prof: f.prof, emoji: mp.emoji }; renderEditorNo(); setTimeout(function () { var e = $('#fnTxt'); if (e) e.focus(); }, 60); }
+    else { fecharSheet(); }
+    if (f.prof === 0) render(); else atualizarMapa();
+  }
+  function excluirNo(id) {
+    var mp = mapaAtual(), r = acharNo(mp.dados, id); if (!r || !r.pai) return;
+    var n = contarNos(r.no) - 1;
+    if (n && !confirm('Excluir “' + rotNo(r.no) + '” e os ' + n + ' tópico(s) dentro dele?')) return;
+    r.pai.c.splice(r.pai.c.indexOf(r.no), 1);
+    if (!r.pai.c.length) delete r.pai.c;
+    S.noSel = r.pai.id; agendarSalvarMapa(); atualizarMapa(); toast('Tópico excluído');
+  }
+
+  /* ----- criar / renomear / excluir mapa ----- */
+  var FMp = null;
+  function formMapa(id) {
+    var m = id ? S.p.mapas.find(function (o) { return o.id === id; }) : null;
+    FMp = { id: id || '', titulo: m ? m.dados.t : '', emoji: m ? m.emoji : '🧠' };
+    var h = '<h2><span>' + (id ? 'Mapa' : 'Novo mapa mental') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<label class="campo"><span>Tópico central</span><input id="fmpTit" maxlength="80" value="' + esc(FMp.titulo) + '" placeholder="Ex.: Concurso Transpetro, Reforma da casa" autocomplete="off" enterkeyhint="done"></label>';
+    h += '<div class="campo"><span>Ícone</span><div class="emojis" id="fmpEmojis">' + EMO_MAPA.map(function (e) { return '<button class="' + (FMp.emoji === e ? 'sel' : '') + '" data-acao="fmpEmoji" data-v="' + e + '">' + e + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="fmpSalvar" id="fmpSalvar">' + ic('check') + (id ? 'Salvar' : 'Criar mapa') + '</button>' +
+      (id ? '<button class="btn perigo" data-acao="mapExcluir" data-id="' + id + '">' + ic('trash') + 'Excluir mapa</button>' : '') + '</div>';
+    abrirSheet(h);
+    setTimeout(function () { var e = $('#fmpTit'); if (e && !id) e.focus(); }, 220);
+  }
+  function salvarFMp() {
+    var t = ($('#fmpTit').value || '').replace(/\s+/g, ' ').trim();
+    if (!t) return toast('Escreva o tópico central', true);
+    var b = $('#fmpSalvar'); b.disabled = true; b.textContent = 'Salvando…';
+    if (FMp.id) {
+      var m = S.p.mapas.find(function (o) { return o.id === FMp.id; });
+      m.dados.t = t; m.titulo = t; m.emoji = FMp.emoji;
+      var antes = S.mapa; S.mapa = m.id; mapaSujo = true; salvarMapaAgora(); S.mapa = antes;
+      fecharSheet(); render(); toast('Mapa atualizado');
+      return;
+    }
+    mutar('mapaCriar', { titulo: t, emoji: FMp.emoji, dados: { id: 'raiz', t: t } }).then(function (d) {
+      fecharSheet(); S.mapa = d.criado; S.noSel = 'raiz'; MZ.ajustar = true; MSTATUS = ''; render();
+      toast('Mapa criado — toque em “Filho” para criar os ramos');
+    }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
+  }
+
+  /* ----- arrastar / pinça / roda do mouse no mapa ----- */
+  var PT = {}, gesto = null;
+  document.addEventListener('pointerdown', function (e) {
+    var area = e.target.closest && e.target.closest('#mapaArea'); if (!area || e.target.closest('.mapa-zoom')) return;
+    PT[e.pointerId] = { x: e.clientX, y: e.clientY };
+    var ids = Object.keys(PT);
+    if (ids.length === 1) gesto = { tipo: 'pan', x0: e.clientX, y0: e.clientY, tx: MZ.tx, ty: MZ.ty, moveu: false, alvo: e.target.closest('[data-no]') };
+    else if (ids.length === 2) {
+      var a = PT[ids[0]], b = PT[ids[1]], r = area.getBoundingClientRect();
+      gesto = { tipo: 'pinca', d0: Math.hypot(a.x - b.x, a.y - b.y), k0: MZ.k, cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top, tx: MZ.tx, ty: MZ.ty, moveu: true };
+    }
+    try { area.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!PT[e.pointerId] || !gesto) return;
+    PT[e.pointerId] = { x: e.clientX, y: e.clientY };
+    if (gesto.tipo === 'pan') {
+      var dx = e.clientX - gesto.x0, dy = e.clientY - gesto.y0;
+      if (Math.abs(dx) + Math.abs(dy) > 6) gesto.moveu = true;
+      if (gesto.moveu) { MZ.tx = gesto.tx + dx; MZ.ty = gesto.ty + dy; aplicarZoom(); }
+    } else {
+      var ids = Object.keys(PT); if (ids.length < 2) return;
+      var a = PT[ids[0]], b = PT[ids[1]], k2 = Math.max(0.25, Math.min(2.5, gesto.k0 * Math.hypot(a.x - b.x, a.y - b.y) / gesto.d0));
+      MZ.k = k2; MZ.tx = gesto.cx - (gesto.cx - gesto.tx) * k2 / gesto.k0; MZ.ty = gesto.cy - (gesto.cy - gesto.ty) * k2 / gesto.k0; aplicarZoom();
+    }
+  });
+  function fimPonteiro(e) {
+    if (!PT[e.pointerId]) return;
+    delete PT[e.pointerId];
+    if (gesto && gesto.tipo === 'pan' && !gesto.moveu && e.type === 'pointerup') {
+      var id = gesto.alvo ? gesto.alvo.getAttribute('data-no') : null;
+      S.noSel = id && S.noSel !== id ? id : (id ? id : null);
+      if (id && navigator.vibrate) navigator.vibrate(8);
+      desenharMapa(); var b = $('#mapaBarra'); if (b) b.innerHTML = barraMapa();
+    }
+    if (!Object.keys(PT).length) gesto = null;
+    else if (gesto && gesto.tipo === 'pinca') gesto = null;
+  }
+  document.addEventListener('pointerup', fimPonteiro);
+  document.addEventListener('pointercancel', fimPonteiro);
+  document.addEventListener('wheel', function (e) {
+    var area = e.target.closest && e.target.closest('#mapaArea'); if (!area) return;
+    e.preventDefault();
+    var r = area.getBoundingClientRect();
+    zoomEm(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
 
   /* ================= COMPRAS ================= */
   var KVIEWS = [{ id: 'Cotando', nome: 'Cotando', ic: 'cart' }, { id: 'Aprovado', nome: 'Aprovados', ic: 'check' }, { id: 'Final', nome: 'Finalizados', ic: 'box' }];
@@ -2622,6 +2985,35 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // mapas mentais
+      case 'mapAbrir': S.mapa = id; S.noSel = null; MZ.ajustar = true; MSTATUS = ''; render(); break;
+      case 'mapFechar': salvarMapaAgora(); S.mapa = null; S.noSel = null; render(); window.scrollTo(0, 0); break;
+      case 'mapVis': S.mapaVis = el.getAttribute('data-v'); store('cm_mapavis', S.mapaVis); MZ.ajustar = S.mapaVis === 'mapa'; render(); break;
+      case 'mapZoom': zoomEm(+el.getAttribute('data-v')); break;
+      case 'mapFit': ajustarMapa(); aplicarZoom(); break;
+      case 'mapSel': S.noSel = S.noSel === id ? null : id; render(); break;
+      case 'mapTog':
+        var rt = acharNo(mapaAtual().dados, id);
+        if (rt && rt.no.c && rt.no.c.length) { if (rt.no.x) delete rt.no.x; else rt.no.x = 1; S.noSel = id; agendarSalvarMapa(); atualizarMapa(); }
+        break;
+      case 'mapAdd': editorNo(el.getAttribute('data-v'), id); break;
+      case 'mapEditar': editorNo('editar', id); break;
+      case 'mapDel': excluirNo(id); break;
+      case 'mapMenu': formMapa(id); break;
+      case 'mapExcluir':
+        var mx2 = S.p.mapas.find(function (o) { return o.id === id; });
+        abrirSheet('<h2><span>Excluir mapa?</span></h2><p class="muted" style="margin-top:-6px">' + esc(mx2.emoji + ' ' + mx2.titulo) + ' · ' + (contarNos(mx2.dados) - 1) + ' tópico(s) serão apagados.</p><div class="acoes">' +
+          '<button class="btn perigo" data-acao="mapExcluirOk" data-id="' + id + '">' + ic('trash') + 'Excluir de vez</button><button class="btn sec" data-acao="fechar">Cancelar</button></div>');
+        break;
+      case 'mapExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar('mapaExcluir', { id: id }).then(function () { fecharSheet(); if (S.mapa === id) S.mapa = null; render(); toast('Mapa excluído'); }, function () {});
+        break;
+      case 'fnSalvar': salvarNo(el.getAttribute('data-v') === 'outro'); break;
+      case 'fnEmoji': FN.t = $('#fnTxt').value; FN.n = $('#fnNota').value; FN.emoji = el.getAttribute('data-v'); renderEditorNo(); break;
+      case 'fnCor': FN.t = $('#fnTxt').value; FN.n = $('#fnNota').value; FN.k = el.getAttribute('data-v'); renderEditorNo(); break;
+      case 'fmpEmoji': FMp.emoji = el.getAttribute('data-v'); document.querySelectorAll('#fmpEmojis button').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-v') === FMp.emoji); }); break;
+      case 'fmpSalvar': salvarFMp(); break;
       // compras
       case 'kView': S.kview = id; store('cm_kview', id); render(); window.scrollTo(0, 0); break;
       case 'kLista': S.kLista = id; render(); break;
@@ -2861,6 +3253,7 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     else if (S.modulo === 'doc') { if (S.x) { if (S.dview === 'ir') formIr(); else formDoc(); } }
     else if (S.modulo === 'met') { if (S.m) formMeta(); }
     else if (S.modulo === 'cmp') { if (S.k) formCompra(); }
+    else if (S.modulo === 'map') { if (S.p && !S.mapa) formMapa(); }
     else if (S.d) novoForm();
   });
 
@@ -2910,6 +3303,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       else if (t.id === 'fhNome') { ev.preventDefault(); salvarFH(); }
       else if (t.id === 'fmNome') { ev.preventDefault(); salvarFM(); }
       else if (t.id === 'fkNome') { ev.preventDefault(); salvarFK(); }
+      else if (t.id === 'fnTxt') { ev.preventDefault(); salvarNo(FN && FN.modo !== 'editar'); } // Enter em tópico novo já abre o próximo
+      else if (t.id === 'fmpTit') { ev.preventDefault(); salvarFMp(); }
     }
   });
 
@@ -2925,7 +3320,8 @@ body.mod-home main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 
   // Recarrega dados ao voltar para o app (ex.: depois de horas em segundo plano).
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && S.token && S.d && S.pend === 0 && $('#sheet').hidden) {
+    if (document.visibilityState === 'hidden' && mapaSujo) salvarMapaAgora(); // app foi para segundo plano: salva o mapa já
+    if (document.visibilityState === 'visible' && S.token && S.d && S.pend === 0 && $('#sheet').hidden && !(S.modulo === 'map' && S.mapa)) {
       var cm = CARGA_MOD[S.modulo];
       api(cm[0]).then(function (d) { if (S.pend === 0) { S[cm[1]] = d; render(); } }, function () {});
     }
