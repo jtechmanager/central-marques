@@ -444,6 +444,11 @@ body.mapa-aberto main { padding-bottom: 0; }
   background: var(--surface); box-shadow: var(--shadow);
   background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 22%, transparent) 1px, transparent 1px); background-size: 22px 22px; }
 .mapa-area svg { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+/* O estilo global de ícones (svg { stroke: currentColor; stroke-width: 2 }) não pode vazar para o mapa:
+   ele contornava textos e caixas (letras pareciam em negrito e escuras no tema claro). Linhas e bordas
+   do mapa definem o próprio stroke como atributo, então continuam aparecendo. */
+#mapaSvg { stroke: none; stroke-width: 0; }
+#mapaSvg text { stroke: none; }
 .mapa-area .mno { cursor: pointer; }
 .mapa-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .mapa-zoom button { width: 40px; height: 40px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); }
@@ -2201,7 +2206,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   function rotNo(n) { var t = (n.t || '').trim() || 'Sem título'; return t.length > 34 ? t.slice(0, 33) + '…' : t; }
   var _cv = null;
   function medir(txt, fonte) { _cv = _cv || document.createElement('canvas').getContext('2d'); _cv.font = fonte; return _cv.measureText(txt).width; }
-  var FONTE = ['700 16px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '600 14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '500 13.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif'];
+  var FONTE = ['500 16px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '400 14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif', '400 13.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif'];
 
   /** Organiza a árvore: raiz no centro, ramos divididos entre direita e esquerda pela altura. */
   function layoutMapa(raiz) {
@@ -2288,7 +2293,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     var c = prof === 1 ? cor : cor, tem = n.c && n.c.length;
     var h = '<div class="ml-row' + (S.noSel === n.id ? ' sel' : '') + '" style="padding-left:' + (8 + prof * 20) + 'px">' +
       (tem ? '<button class="ml-tog" data-acao="mapTog" data-id="' + n.id + '">' + (n.x ? '▸' : '▾') + '</button>' : '<span class="ml-tog"></span>') +
-      '<button class="ml-txt" data-acao="mapSel" data-id="' + n.id + '"><span class="ml-dot" style="background:' + (prof === 0 ? 'var(--accent)' : c) + '"></span><span' + (prof === 0 ? ' style="font-weight:800;font-size:17px"' : prof === 1 ? ' style="font-weight:700"' : '') + '>' + esc((n.t || '').trim() || 'Sem título') + '</span>' + (n.n ? ' <span>📝</span>' : '') + (n.x && tem ? ' <span class="tag">+' + (contarNos(n) - 1) + '</span>' : '') + '</button></div>';
+      '<button class="ml-txt" data-acao="mapSel" data-id="' + n.id + '"><span class="ml-dot" style="background:' + (prof === 0 ? 'var(--accent)' : c) + '"></span><span' + (prof === 0 ? ' style="font-weight:600;font-size:17px"' : prof === 1 ? ' style="font-weight:500"' : '') + '>' + esc((n.t || '').trim() || 'Sem título') + '</span>' + (n.n ? ' <span>📝</span>' : '') + (n.x && tem ? ' <span class="tag">+' + (contarNos(n) - 1) + '</span>' : '') + '</button></div>';
     if (tem && !n.x) n.c.forEach(function (f, i) { h += listaMapaHtml(f, prof + 1, prof === 0 ? (f.k || COR_RAMOS[i % COR_RAMOS.length]) : cor); });
     return h;
   }
