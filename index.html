@@ -207,6 +207,7 @@ main { padding: 0 16px calc(var(--nav-h) + 96px + env(safe-area-inset-bottom)); 
 .parc:last-child { border-bottom: 0; }
 .parc .anel { width: 46px; height: 46px; flex: none; }
 .parc .anel circle { fill: none; stroke-width: 5; }
+.parc .anel text { stroke: none; } /* não herda o contorno global dos ícones */
 .parc .corpo { flex: 1; min-width: 0; }
 .parc .desc { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
