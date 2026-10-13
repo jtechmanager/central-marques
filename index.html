@@ -451,6 +451,8 @@ body.mapa-aberto main { padding-bottom: 0; }
 #mapaSvg { stroke: none; stroke-width: 0; }
 #mapaSvg text { stroke: none; }
 .mapa-area .mno { cursor: pointer; }
+.mapa-fantasma { position: absolute; z-index: 5; transform: translate(-50%, -130%); pointer-events: none; padding: 8px 14px; border-radius: 99px;
+  background: var(--accent); color: var(--on-accent); font-size: 13.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.25); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .mapa-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .mapa-zoom button { width: 40px; height: 40px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); }
 .mapa-zoom svg { width: 18px; height: 18px; }
@@ -2237,7 +2239,16 @@ body.mapa-aberto main { padding-bottom: 0; }
     raiz._x = 0; raiz._y = 0; raiz._prof = 0; raiz._cor = 'var(--accent)'; nos.push(raiz);
     if (!raiz.x && raiz.c && raiz.c.length) {
       var total = raiz.c.reduce(function (s, f) { return s + f._h; }, 0), dir = [], esq = [], acum = 0;
-      raiz.c.forEach(function (f) { if (acum < total / 2 || !dir.length) { dir.push(f); acum += f._h; } else esq.push(f); });
+      if (raiz.c.some(function (f) { return f.s; })) {
+        // Lado escolhido ao arrastar (s: 'd' direita / 'e' esquerda); os sem lado vão para o lado mais leve.
+        var aD = 0, aE = 0;
+        raiz.c.forEach(function (f) {
+          var lado = f.s || (aD <= aE ? 'd' : 'e');
+          if (lado === 'd') { dir.push(f); aD += f._h; } else { esq.push(f); aE += f._h; }
+        });
+      } else {
+        raiz.c.forEach(function (f) { if (acum < total / 2 || !dir.length) { dir.push(f); acum += f._h; } else esq.push(f); });
+      }
       colocar(dir, raiz, 1, 1, null);
       if (esq.length) colocar(esq, raiz, -1, 1, null);
     }
@@ -2351,7 +2362,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   var MSTATUS = '', mapaTimer = null, mapaFila = Promise.resolve(), mapaSujo = false;
   function statusMapa(t) { MSTATUS = t; var e = $('#mapaStatus'); if (e) e.textContent = t; }
   function agendarSalvarMapa() { mapaSujo = true; statusMapa('Salvando…'); clearTimeout(mapaTimer); mapaTimer = setTimeout(salvarMapaAgora, 700); }
-  function limparArvore(n) { var o = { id: n.id, t: n.t }; if (n.n) o.n = n.n; if (n.k) o.k = n.k; if (n.x) o.x = 1; if (n.c && n.c.length) o.c = n.c.map(limparArvore); return o; }
+  function limparArvore(n) { var o = { id: n.id, t: n.t }; if (n.n) o.n = n.n; if (n.k) o.k = n.k; if (n.x) o.x = 1; if (n.s === 'd' || n.s === 'e') o.s = n.s; if (n.c && n.c.length) o.c = n.c.map(limparArvore); return o; }
   function salvarMapaAgora() {
     clearTimeout(mapaTimer);
     var mp = mapaAtual(); if (!mp || !mapaSujo) return mapaFila;
@@ -2465,8 +2476,15 @@ body.mapa-aberto main { padding-bottom: 0; }
     PT[e.pointerId] = { x: e.clientX, y: e.clientY };
     if (gesto.tipo === 'pan') {
       var dx = e.clientX - gesto.x0, dy = e.clientY - gesto.y0;
-      if (Math.abs(dx) + Math.abs(dy) > 6) gesto.moveu = true;
+      if (Math.abs(dx) + Math.abs(dy) > 6) {
+        gesto.moveu = true;
+        // Começou o movimento em cima de um tópico (que não é o central): vira "arrastar tópico".
+        var idAlvo = gesto.alvo && gesto.alvo.getAttribute('data-no'), mp0 = mapaAtual();
+        if (idAlvo && mp0 && idAlvo !== mp0.dados.id && Object.keys(PT).length === 1) { iniciarArrasto(idAlvo, e); return; }
+      }
       if (gesto.moveu) { MZ.tx = gesto.tx + dx; MZ.ty = gesto.ty + dy; aplicarZoom(); }
+    } else if (gesto.tipo === 'arrasto') {
+      moverArrasto(e);
     } else {
       var ids = Object.keys(PT); if (ids.length < 2) return;
       var a = PT[ids[0]], b = PT[ids[1]], k2 = Math.max(0.25, Math.min(2.5, gesto.k0 * Math.hypot(a.x - b.x, a.y - b.y) / gesto.d0));
@@ -2476,6 +2494,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   function fimPonteiro(e) {
     if (!PT[e.pointerId]) return;
     delete PT[e.pointerId];
+    if (gesto && gesto.tipo === 'arrasto') { soltarArrasto(e.type === 'pointerup'); gesto = null; return; }
     if (gesto && gesto.tipo === 'pan' && !gesto.moveu && e.type === 'pointerup') {
       var id = gesto.alvo ? gesto.alvo.getAttribute('data-no') : null;
       S.noSel = id && S.noSel !== id ? id : (id ? id : null);
@@ -2487,6 +2506,98 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   document.addEventListener('pointerup', fimPonteiro);
   document.addEventListener('pointercancel', fimPonteiro);
+
+  /* ----- arrastar tópico para reorganizar ----- */
+  function mundo(e) { // coordenadas da tela -> coordenadas do mapa
+    var r = $('#mapaArea').getBoundingClientRect();
+    return { x: (e.clientX - r.left - MZ.tx) / MZ.k, y: (e.clientY - r.top - MZ.ty) / MZ.k, ax: e.clientX - r.left, ay: e.clientY - r.top, w: r.width, h: r.height };
+  }
+  function idsDaSubarvore(n, set) { set[n.id] = 1; (n.c || []).forEach(function (f) { idsDaSubarvore(f, set); }); return set; }
+  function iniciarArrasto(id, e) {
+    var mp = mapaAtual(), r = acharNo(mp.dados, id);
+    gesto = { tipo: 'arrasto', id: id, proibidos: idsDaSubarvore(r.no, {}), drop: null };
+    var fantasma = document.createElement('div');
+    fantasma.className = 'mapa-fantasma'; fantasma.id = 'mapaFantasma'; fantasma.textContent = rotNo(r.no);
+    $('#mapaArea').appendChild(fantasma);
+    var gNo = document.querySelector('#mapaG [data-no="' + id + '"]'); if (gNo) gNo.style.opacity = '.35';
+    if (navigator.vibrate) navigator.vibrate(15);
+    moverArrasto(e);
+  }
+  /** Onde o tópico cairia: antes/depois de um irmão, como filho, ou (ramo principal) num dos lados. */
+  function calcularDrop(p) {
+    var mp = mapaAtual(), raiz = mp.dados, alvo = null;
+    (MZ._nos || []).forEach(function (n) {
+      if (gesto.proibidos[n.id]) return;
+      var alto = n._prof === 0 ? NH_RAIZ : NH;
+      if (p.x >= n._x - n._w / 2 - 8 && p.x <= n._x + n._w / 2 + 8 && p.y >= n._y - alto / 2 - 10 && p.y <= n._y + alto / 2 + 10) alvo = { no: n, alto: alto };
+    });
+    if (alvo) {
+      if (alvo.no._prof === 0) return { modo: 'filho', no: alvo.no, lado: p.x < 0 ? 'e' : 'd' };
+      var rel = (p.y - (alvo.no._y - alvo.alto / 2)) / alvo.alto;
+      return { modo: rel < 0.3 ? 'antes' : rel > 0.7 ? 'depois' : 'filho', no: alvo.no };
+    }
+    var arr = acharNo(raiz, gesto.id);
+    if (arr.pai === raiz) return { modo: 'lado', lado: p.x < raiz._x ? 'e' : 'd', y: p.y };
+    return null;
+  }
+  function moverArrasto(e) {
+    var p = mundo(e), f = $('#mapaFantasma');
+    if (f) { f.style.left = p.ax + 'px'; f.style.top = p.ay + 'px'; }
+    // perto da borda: rola o mapa para poder levar o tópico mais longe
+    var m = 36, passo = 8;
+    if (p.ax < m) MZ.tx += passo; else if (p.ax > p.w - m) MZ.tx -= passo;
+    if (p.ay < m) MZ.ty += passo; else if (p.ay > p.h - m) MZ.ty -= passo;
+    aplicarZoom();
+    gesto.drop = calcularDrop(p);
+    desenharIndicador(gesto.drop);
+  }
+  function desenharIndicador(d) {
+    var g = $('#mapaG'); if (!g) return;
+    var ant = $('#mapaDrop'); if (ant) ant.remove();
+    if (!d) return;
+    var ns = 'http://www.w3.org/2000/svg', el = document.createElementNS(ns, 'g'); el.id = 'mapaDrop';
+    var h = '';
+    if (d.modo === 'filho') {
+      var n = d.no, alto = n._prof === 0 ? NH_RAIZ : NH;
+      h = '<rect x="' + (n._x - n._w / 2 - 6) + '" y="' + (n._y - alto / 2 - 6) + '" width="' + (n._w + 12) + '" height="' + (alto + 12) + '" rx="' + (alto / 2 + 6) + '" fill="none" stroke="var(--amber)" stroke-width="3" stroke-dasharray="7 5"/>';
+    } else if (d.modo === 'antes' || d.modo === 'depois') {
+      var n2 = d.no, a2 = NH, yy = d.modo === 'antes' ? n2._y - a2 / 2 - GAP / 2 : n2._y + a2 / 2 + GAP / 2;
+      h = '<line x1="' + (n2._x - n2._w / 2) + '" y1="' + yy + '" x2="' + (n2._x + n2._w / 2) + '" y2="' + yy + '" stroke="var(--amber)" stroke-width="4" stroke-linecap="round"/>';
+    } else if (d.modo === 'lado') {
+      var raiz = mapaAtual().dados, sx = raiz._x + (d.lado === 'd' ? 1 : -1) * (raiz._w / 2 + HX + 60);
+      h = '<rect x="' + (sx - 60) + '" y="' + (d.y - NH / 2) + '" width="120" height="' + NH + '" rx="' + (NH / 2) + '" fill="none" stroke="var(--amber)" stroke-width="3" stroke-dasharray="7 5"/>';
+    }
+    el.innerHTML = h; g.appendChild(el);
+  }
+  function soltarArrasto(confirmar) {
+    var f = $('#mapaFantasma'); if (f) f.remove();
+    var d = gesto.drop, id = gesto.id;
+    if (!confirmar || !d) { desenharMapa(); if (!d && confirmar) toast('Solte em cima de outro tópico'); return; }
+    var mp = mapaAtual(), raiz = mp.dados, r = acharNo(raiz, id);
+    var foto = JSON.stringify(limparArvore(raiz));
+    var congelarLados = function () { (raiz.c || []).forEach(function (x) { if (!x.s && x._dir) x.s = x._dir < 0 ? 'e' : 'd'; }); };
+    var noDestino = d.no ? acharNo(raiz, d.no.id) : null;
+    // tira da posição atual
+    r.pai.c.splice(r.pai.c.indexOf(r.no), 1);
+    if (!r.pai.c.length) delete r.pai.c;
+    if (d.modo === 'filho') {
+      if (noDestino.no === raiz) { congelarLados(); r.no.s = d.lado; } else delete r.no.s;
+      noDestino.no.c = noDestino.no.c || []; noDestino.no.c.push(r.no); delete noDestino.no.x;
+    } else if (d.modo === 'antes' || d.modo === 'depois') {
+      var pai = noDestino.pai, i = pai.c.indexOf(noDestino.no) + (d.modo === 'depois' ? 1 : 0);
+      if (pai === raiz) { congelarLados(); r.no.s = noDestino.no.s || (noDestino.no._dir < 0 ? 'e' : 'd'); } else delete r.no.s;
+      pai.c.splice(i, 0, r.no);
+    } else if (d.modo === 'lado') {
+      congelarLados(); r.no.s = d.lado;
+      raiz.c = raiz.c || [];
+      var pos = raiz.c.findIndex(function (x) { return x.s === d.lado && x._y > d.y; });
+      if (pos < 0) raiz.c.push(r.no); else raiz.c.splice(pos, 0, r.no);
+    }
+    S.noSel = id;
+    agendarSalvarMapa(); atualizarMapa();
+    if (navigator.vibrate) navigator.vibrate(12);
+    toast('“' + esc(rotNo(r.no)) + '” movido', false, function () { mp.dados = JSON.parse(foto); S.noSel = id; agendarSalvarMapa(); atualizarMapa(); });
+  }
   document.addEventListener('wheel', function (e) {
     var area = e.target.closest && e.target.closest('#mapaArea'); if (!area) return;
     e.preventDefault();
