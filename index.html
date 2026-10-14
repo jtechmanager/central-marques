@@ -794,13 +794,16 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   function renderFinLock() {
     $('#bottomNav').innerHTML = ''; $('#subnav').hidden = true;
+    // Outros painéis terminam de carregar em segundo plano e chamam render(): se a tela do PIN já está aberta,
+    // não recria (senão apagaria os dígitos que a pessoa está digitando).
+    if ($('#finLock')) { pintarFinDots(); return; }
     var t = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
     $('#view').innerHTML = '<div class="fin-lock" id="finLock"><div class="pin-brand"><div class="logo" style="font-size:28px">🔒</div><h1>Financeiro protegido</h1><p>Digite seu PIN para ver suas finanças</p></div>' +
       '<div class="dots" id="finDots"><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pin-msg" id="finMsg"></div>' +
       '<div class="teclado">' + t.map(function (k) {
         return k === '' ? '<button class="vazio" tabindex="-1"></button>' : k === 'del' ? '<button class="apagar" data-fpin="del" aria-label="Apagar">' + ic('back') + '</button>' : '<button data-fpin="' + k + '">' + k + '</button>';
       }).join('') + '</div><p class="muted" style="font-size:12.5px;text-align:center;max-width:300px">Fica liberado enquanto você usa. Depois de 10 minutos sem mexer no Financeiro, ele pede o PIN de novo.</p></div>';
-    finPin = ''; pintarFinDots();
+    pintarFinDots();
   }
   function pintarFinDots(erro) {
     var d = $('#finDots'); if (!d) return;
@@ -980,6 +983,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (id === 'emp') S.pessoa = '*'; else if (id === 'fin') S.pessoa = 'Higor';
     pintarModulos(); fecharSheet(); window.scrollTo(0, 0);
     var ehFin = id === 'fin' || id === 'emp';
+    if (ehFin && !finLiberado()) finPin = ''; // entrou no Financeiro trancado: começa a digitação do zero
     if (CARGA_MOD[id] && !S[CARGA_MOD[id][1]] && (!ehFin || finLiberado())) {
       $('#view').innerHTML = '<div class="esqueleto" style="height:48px"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
       carregarModulo(id).catch(function (e) { if (e.message !== 'sessao') toast(esc(e.message), true); });
