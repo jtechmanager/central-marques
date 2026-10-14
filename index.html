@@ -531,6 +531,12 @@ body.mapa-aberto main { padding-bottom: 0; }
 .meta-anel small { color: var(--muted); font-size: 13px; }
 .btn:disabled { cursor: not-allowed; }
 
+/* ---------- financeiro: PIN e chave pessoal/empresa ---------- */
+.fin-lock { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 24px 0 40px; }
+.fin-lock .pin-brand h1 { font-size: 20px; }
+.chave-livro { margin: 2px 0 12px; }
+.chave-livro button { font-size: 15px; padding: 11px 6px; }
+
 /* ---------- holerites ---------- */
 .hol-atalho { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow); margin: -6px 0 16px; }
 .hol-atalho .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -714,7 +720,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     k: null, kview: store('cm_kview') || 'Cotando', kLista: '',
     p: null, mapa: null, mapaVis: store('cm_mapavis') || 'mapa', noSel: null,
     livro: 'pes', dPes: null, dEmp: null,
-    o: null, oview: store('cm_oview') || 'abertos', kPes: '*' };
+    o: null, oview: store('cm_oview') || 'abertos', kPes: '*',
+    finOk: false, finAte: 0 }; // Financeiro protegido por PIN (validado no servidor; 10 min sem uso)
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -723,7 +730,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   var MODULOS = [
     { id: 'home', nome: 'Início', ic: 'home' },
     { id: 'fin', nome: 'Financeiro', ic: 'wallet' },
-    { id: 'emp', nome: 'Financeiro Empresa', ic: 'briefcase' },
+    { id: 'emp', nome: 'Financeiro Empresa', ic: 'briefcase', oculto: true }, // aberto pela chave Pessoal/Empresa dentro do Financeiro
     { id: 'orc', nome: 'Orçamentos', ic: 'receipt' },
     { id: 'tar', nome: 'Tarefas', ic: 'kanban' },
     { id: 'hab', nome: 'Hábitos', ic: 'flame' },
@@ -770,10 +777,59 @@ body.mapa-aberto main { padding-bottom: 0; }
       setCarga(-1);
       if (!r || !r.ok) {
         if (r && r.sessao === false) { bloquear('Sessão expirada. Digite o PIN.'); throw new Error('sessao'); }
+        if (r && r.fin === false) { trancarFin(); throw new Error('fin'); }
         throw new Error((r && r.erro) || 'Erro inesperado');
       }
+      if (ACOES_FIN.indexOf(acao) >= 0) S.finAte = Date.now() + FIN_MS; // uso do Financeiro renova o desbloqueio
       return r.dados;
     }, function (e) { setCarga(-1); throw new Error(e && e.message ? e.message : 'Sem conexão com o servidor'); });
+  }
+  /* ----- PIN do Financeiro ----- */
+  var FIN_MS = 10 * 60 * 1000, finPin = '', finPinTravado = false;
+  function finLiberado() { return S.finOk && Date.now() < S.finAte; }
+  /** Tranca o Financeiro e apaga os dados financeiros da memória do app. */
+  function trancarFin() {
+    S.finOk = false; S.finAte = 0; S.dPes = null; S.dEmp = null; S.d = null;
+    if (S.modulo === 'fin' || S.modulo === 'emp') { fecharSheet(); render(); }
+  }
+  function renderFinLock() {
+    $('#bottomNav').innerHTML = ''; $('#subnav').hidden = true;
+    var t = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
+    $('#view').innerHTML = '<div class="fin-lock" id="finLock"><div class="pin-brand"><div class="logo" style="font-size:28px">🔒</div><h1>Financeiro protegido</h1><p>Digite seu PIN para ver suas finanças</p></div>' +
+      '<div class="dots" id="finDots"><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pin-msg" id="finMsg"></div>' +
+      '<div class="teclado">' + t.map(function (k) {
+        return k === '' ? '<button class="vazio" tabindex="-1"></button>' : k === 'del' ? '<button class="apagar" data-fpin="del" aria-label="Apagar">' + ic('back') + '</button>' : '<button data-fpin="' + k + '">' + k + '</button>';
+      }).join('') + '</div><p class="muted" style="font-size:12.5px;text-align:center;max-width:300px">Fica liberado enquanto você usa. Depois de 10 minutos sem mexer no Financeiro, ele pede o PIN de novo.</p></div>';
+    finPin = ''; pintarFinDots();
+  }
+  function pintarFinDots(erro) {
+    var d = $('#finDots'); if (!d) return;
+    Array.prototype.forEach.call(d.children, function (s, i) { s.classList.toggle('on', i < finPin.length); });
+    d.classList.toggle('erro', !!erro);
+  }
+  function teclaFin(k) {
+    if (finPinTravado) return;
+    if (k === 'del') finPin = finPin.slice(0, -1); else if (finPin.length < 6) finPin += k;
+    var m = $('#finMsg'); if (m) m.textContent = '';
+    pintarFinDots();
+    if (finPin.length === 6) enviarFinPin();
+  }
+  function enviarFinPin() {
+    finPinTravado = true;
+    api('desbloquearFin', { pin: finPin }).then(function (r) {
+      finPin = '';
+      if (r.ok) {
+        S.finOk = true; S.finAte = Date.now() + FIN_MS; finPinTravado = false;
+        $('#view').innerHTML = '<div class="esqueleto" style="height:48px"></div><div class="esqueleto" style="height:150px"></div><div class="esqueleto"></div>';
+        Promise.all([carregarModulo('fin'), carregarModulo('emp')]).then(function () { abrirLivro(S.modulo === 'emp' ? 'emp' : 'pes'); render(); }, function () {});
+      } else {
+        pintarFinDots(true);
+        var m = $('#finMsg');
+        if (r.bloqueadoSeg) { if (m) m.textContent = 'Muitas tentativas. Aguarde ' + Math.ceil(r.bloqueadoSeg / 60) + ' min.'; setTimeout(function () { finPinTravado = false; }, r.bloqueadoSeg * 1000); }
+        else { if (m) m.textContent = r.erro + (r.restantes ? ' — ' + r.restantes + ' tentativa(s) restante(s)' : ''); finPinTravado = false; }
+        if (navigator.vibrate) navigator.vibrate(120);
+      }
+    }, function (e) { finPin = ''; finPinTravado = false; pintarFinDots(true); var m = $('#finMsg'); if (m && e.message !== 'sessao') m.textContent = 'Sem conexão. Tente de novo.'; });
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
@@ -796,7 +852,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     }, function (e) {
       S.pend--;
       if (desfazer) { desfazer(); render(); }
-      if (e.message !== 'sessao') toast(esc(e.message), true);
+      if (e.message !== 'sessao' && e.message !== 'fin') toast(esc(e.message), true);
       throw e;
     });
   }
@@ -854,7 +910,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   function bloquear(msg) {
     if (S.token) chamar('sair', [S.token]).catch(function () {});
-    S.token = null; store('cm_token', null); S.d = null; S.dPes = null; S.dEmp = null;
+    S.token = null; store('cm_token', null); S.d = null; S.dPes = null; S.dEmp = null; S.finOk = false; S.finAte = 0;
     fecharSheet();
     $('#app').hidden = true; $('#pin').hidden = false;
     $('#pinMsg').textContent = msg || '';
@@ -868,7 +924,9 @@ body.mapa-aberto main { padding-bottom: 0; }
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['home', 'fin', 'emp', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }));
+    // Financeiro (pessoal e empresa) só carrega depois do PIN extra
+    var ordem = [S.modulo].concat(['home', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }))
+      .filter(function (m) { return (m !== 'fin' && m !== 'emp') || finLiberado(); });
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
   /* Dois livros financeiros: S.dPes e S.dEmp; S.d aponta para o livro aberto (S.livro). */
@@ -903,11 +961,11 @@ body.mapa-aberto main { padding-bottom: 0; }
     pintarModulos();
   }
   function pintarModulos() {
-    $('#modsSide').innerHTML = MODULOS.map(function (m) {
-      return '<button class="mod' + (m.id === S.modulo ? ' ativo' : '') + '" data-acao="modulo" data-id="' + m.id + '">' + ic(m.ic) + esc(nomeModulo(m.id)) + (m.breve ? '<span class="breve">em breve</span>' : '') + '</button>';
+    var atual = S.modulo === 'emp' ? 'fin' : S.modulo;
+    $('#modsSide').innerHTML = MODULOS.filter(function (m) { return !m.oculto; }).map(function (m) {
+      return '<button class="mod' + (m.id === atual ? ' ativo' : '') + '" data-acao="modulo" data-id="' + m.id + '">' + ic(m.ic) + esc(nomeModulo(m.id)) + (m.breve ? '<span class="breve">em breve</span>' : '') + '</button>';
     }).join('');
-    var mod = MODULOS.filter(function (m) { return m.id === S.modulo; })[0];
-    $('#tituloTop').textContent = nomeModulo(mod.id);
+    $('#tituloTop').textContent = nomeModulo(atual);
     document.body.classList.toggle('mod-tar', S.modulo === 'tar');
     document.body.classList.toggle('mod-home', S.modulo === 'home');
     document.body.classList.toggle('mapa-aberto', S.modulo === 'map' && !!S.mapa);
@@ -921,7 +979,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     abrirLivro(id === 'emp' ? 'emp' : 'pes');
     if (id === 'emp') S.pessoa = '*'; else if (id === 'fin') S.pessoa = 'Higor';
     pintarModulos(); fecharSheet(); window.scrollTo(0, 0);
-    if (CARGA_MOD[id] && !S[CARGA_MOD[id][1]]) {
+    var ehFin = id === 'fin' || id === 'emp';
+    if (CARGA_MOD[id] && !S[CARGA_MOD[id][1]] && (!ehFin || finLiberado())) {
       $('#view').innerHTML = '<div class="esqueleto" style="height:48px"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
       carregarModulo(id).catch(function (e) { if (e.message !== 'sessao') toast(esc(e.message), true); });
     }
@@ -952,6 +1011,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (S.modulo === 'cmp') { if (S.k) renderCmp(); return; }
     if (S.modulo === 'map') { if (S.p) renderMap(); return; }
     if (S.modulo === 'orc') { if (S.o) renderOrc(); return; }
+    // Financeiro: sem PIN (ou depois de 10 min parado) mostra a tela de desbloqueio e apaga os dados da memória
+    if (!finLiberado()) { if (S.dPes || S.dEmp) { S.finOk = false; S.dPes = null; S.dEmp = null; S.d = null; } renderFinLock(); return; }
     if (!S.d) return;
     var vencidos = lancs().filter(function (l) { return l.status === 'Pendente' && l.vencimento < S.d.hoje; }).length;
     var navHtml = function (cls) {
@@ -965,7 +1026,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     $('#subnav').innerHTML = navHtml();
     $('#subnav').hidden = false;
     var fn = { mes: vMes, pend: vPend, prev: vPrev, anal: vAnal, hist: vHist }[S.view] || vMes;
-    $('#view').innerHTML = (S.view === 'hist' ? '' : pessoaChips()) + fn();
+    $('#view').innerHTML = chaveLivro() + (S.view === 'hist' ? '' : pessoaChips()) + fn();
   }
 
   function mesNav() {
@@ -1045,6 +1106,11 @@ body.mapa-aberto main { padding-bottom: 0; }
     var c = {}; c[padraoPessoa()] = 0;
     S.d.lancamentos.forEach(function (l) { var t = l.titular || padraoPessoa(); c[t] = (c[t] || 0) + 1; });
     return Object.keys(c).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || c[b] - c[a] || a.localeCompare(b); });
+  }
+  /** Um Financeiro só na tela: a chave alterna entre o livro pessoal e o da empresa (dados continuam separados). */
+  function chaveLivro() {
+    return '<div class="seg chave-livro"><button data-acao="livro" data-v="pes" class="' + (S.livro === 'pes' ? 'ativo' : '') + '">👤 Pessoal</button>' +
+      '<button data-acao="livro" data-v="emp" class="' + (S.livro === 'emp' ? 'ativo' : '') + '">🏢 ' + esc(empresaNomeAtual()) + '</button></div>';
   }
   function empresaNomeAtual() { return (S.dEmp && S.dEmp.empresaNome) || (S.dPes && S.dPes.empresaNome) || (S.o && S.o.empresaNome) || 'Empresa'; }
   function quemPagaTxt(l) {
@@ -1388,7 +1454,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   /** Barra do topo no livro da empresa: nome editável + atalho para o resumo sócio/empresa. */
   function chipEmpresa() {
     var nome = (S.d && S.d.empresaNome) || 'Empresa';
-    return '<div class="chips"><button class="chip ativo" data-acao="empNome">🏢 ' + esc(nome) + ' <span style="opacity:.7;margin-left:4px">✏️</span></button></div>';
+    return '<div class="chips" style="justify-content:flex-end;margin-top:-6px"><button class="chip leve" data-acao="empNome" title="Renomear ' + esc(nome) + '" style="font-size:13px">✏️ Nome da empresa</button></div>';
   }
   function campoQuemPaga(f) {
     var ops = f.tipo === 'Receita' ? [['', '🏢 Cliente / venda'], ['despesa', '👤 Aporte meu']] : [['', '🏢 Conta da empresa'], ['despesa', '👤 Meu dinheiro'], ['receita', '💸 Retirada p/ mim']];
@@ -1964,7 +2030,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' },
     map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' }
   };
-  var PAINEIS_REAIS = ['fin', 'emp', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'];
+  var PAINEIS_REAIS = ['fin', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map']; // empresa: dentro do card Financeiro
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -1978,6 +2044,7 @@ body.mapa-aberto main { padding-bottom: 0; }
       imagemId: (c && c.imagemId) || '', ordem: c ? c.ordem : PAINEIS_REAIS.indexOf(m), emoji: p.emoji, cor: p.cor, custom: ehCustom(m) };
   }
   function nomeModulo(id) {
+    if (id === 'emp') return nomeModulo('fin') + ' · ' + empresaNomeAtual();
     if (CARD_PADRAO[id]) return cardDe(id).nome;
     var m = MODULOS.filter(function (x) { return x.id === id; })[0];
     return m ? m.nome : '';
@@ -2012,12 +2079,19 @@ body.mapa-aberto main { padding-bottom: 0; }
         var vE = E.lancamentos.filter(function (l) { return l.status === 'Pendente' && l.vencimento < E.hoje; }).length;
         return { txt: (vE ? vE + ' vencido(s) · ' : '') + 'Resultado do mês ' + brl(res), alerta: vE > 0 };
       }
+      if (m === 'fin' && !finLiberado()) return { txt: '🔒 Protegido — toque para desbloquear' };
       if (m === 'fin' && S.dPes) {
         var DP = S.dPes, meus = DP.lancamentos.filter(function (l) { return (l.titular || padraoPessoa()) === padraoPessoa(); });
         var venc = meus.filter(function (l) { return l.status === 'Pendente' && l.tipo === 'Despesa' && l.vencimento < DP.hoje; });
         var pend = soma(meus.filter(function (l) { return l.mes === DP.mesAtual && l.tipo === 'Despesa' && l.status === 'Pendente'; }));
         if (venc.length) return { txt: venc.length + ' vencida(s) · ' + brl(soma(venc)), alerta: true };
-        return { txt: pend ? 'A pagar no mês ' + brl(pend) : 'Contas do mês em dia ✓' };
+        var txtEmp = '';
+        if (S.dEmp) {
+          var E2 = S.dEmp, dm2 = E2.lancamentos.filter(function (l) { return l.mes === E2.mesAtual; });
+          var r2 = soma(dm2.filter(function (l) { return l.tipo === 'Receita'; })) - soma(dm2.filter(function (l) { return l.tipo === 'Despesa'; }));
+          if (E2.lancamentos.length) txtEmp = ' · ' + (E2.empresaNome || 'Empresa') + ' ' + brl(r2);
+        }
+        return { txt: (pend ? 'A pagar no mês ' + brl(pend) : 'Contas do mês em dia ✓') + txtEmp };
       }
       if (m === 'tar' && S.t) {
         var f = S.t.tarefas.filter(function (t) { return t.status === 'Fazendo'; }).length, a = S.t.tarefas.filter(function (t) { return t.status === 'A fazer'; }).length;
@@ -2846,7 +2920,8 @@ body.mapa-aberto main { padding-bottom: 0; }
         return '<div class="hist"><div class="ic ' + (l.status === 'Pago' ? 'pago' : 'pend') + '">' + ic(l.status === 'Pago' ? 'check' : 'clock') + '</div><div class="corpo"><div class="t1">' + (l.recorrencia === 'Parcelado' ? 'Parcela ' + l.parcela + '/' + l.totalParcelas : /entrada/.test(l.descricao) ? 'Entrada' : l.recorrencia === 'Fixo' ? nomeMes(l.mes) : 'Pagamento') + '</div>' +
           '<div class="t2">' + (l.status === 'Pago' ? 'recebido ' + dataBR(l.dataPagamento || l.vencimento) : 'vence ' + dataBR(l.vencimento)) + '</div></div><b class="num">' + brl(l.valor) + '</b></div>';
       }).join('') + '</div><p class="muted" style="font-size:12px;margin:6px 0 0">Marque como recebido no ' + esc(nomeModulo('emp')) + '.</p>';
-    } else if (o.destinoResumo) h += '<div class="num-box"><div><small>Recebimentos</small><b style="font-size:15px;letter-spacing:0">' + esc(o.destinoResumo) + '</b></div></div>';
+    } else if (o.destinoResumo) h += '<div class="num-box"><div><small>Recebimentos</small><b style="font-size:15px;letter-spacing:0">' + esc(o.destinoResumo) + '</b>' +
+      (!finLiberado() ? '<small style="margin-top:4px">🔒 Desbloqueie o Financeiro para ver o que já foi recebido</small>' : '') + '</div></div>';
     h += '<div class="acoes" style="margin-top:14px">';
     if (o.status === 'Rascunho' || o.status === 'Enviado') {
       h += '<button class="btn ok" data-acao="oAprovar" data-id="' + id + '">' + ic('check') + 'Aprovado pelo cliente</button>';
@@ -3240,7 +3315,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     var Q = cotsDe(id), hoje = S.k.hoje;
     var best = Q[0];
     var xc = S.k.compras.find(function (o) { return o.id === id; });
-    var daEmpresa = S.dEmp && xc && xc.titular === S.dEmp.empresaNome;
+    var daEmpresa = xc && xc.titular === empresaNomeAtual();
     FA = { id: id, cotacaoId: best.id, destino: 'fin', livro: daEmpresa ? 'emp' : 'pes', pagoPessoal: false, vencimento: hoje, parcelas: best.parcelas,
       categoria: daEmpresa ? 'Fornecedores' : best.parcelas > 1 ? 'Compras parceladas' : 'Outros', metaModo: 'nova', metaId: '', prazo: '' };
     renderAprovar();
@@ -3264,8 +3339,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     }).join('') + '</div></div>';
     h += '<label class="campo" style="margin-bottom:6px"><span>Para onde vai?</span></label><div class="seg"><button data-acao="faDest" data-v="fin" class="' + (f.destino === 'fin' ? 'ativo' : '') + '">💰 Despesa no Financeiro</button><button data-acao="faDest" data-v="meta" class="' + (f.destino === 'meta' ? 'ativo' : '') + '">🎯 Meta</button></div>';
     if (f.destino === 'fin') {
-      if (S.dEmp) {
-        h += '<div class="seg"><button data-acao="faLivro" data-v="pes" class="' + (f.livro === 'pes' ? 'ativo' : '') + '">👤 Pessoal</button><button data-acao="faLivro" data-v="emp" class="' + (f.livro === 'emp' ? 'ativo' : '') + '">🏢 ' + esc(S.dEmp.empresaNome || 'Empresa') + '</button></div>';
+      {
+        h += '<div class="seg"><button data-acao="faLivro" data-v="pes" class="' + (f.livro === 'pes' ? 'ativo' : '') + '">👤 Pessoal</button><button data-acao="faLivro" data-v="emp" class="' + (f.livro === 'emp' ? 'ativo' : '') + '">🏢 ' + esc(empresaNomeAtual()) + '</button></div>';
         if (f.livro === 'emp') h += '<button class="toggle-linha" data-acao="faPagoPes" style="width:100%;text-align:left"><span><b>Vou pagar com meu dinheiro pessoal</b><small>A despesa fica na empresa e aparece também no seu Financeiro pessoal</small></span><span class="sw' + (f.pagoPessoal ? ' on' : '') + '"></span></button>';
       }
       var livroCats = f.livro === 'emp' && S.dEmp ? S.dEmp : S.dPes;
@@ -3506,6 +3581,8 @@ body.mapa-aberto main { padding-bottom: 0; }
 
   /* ================= eventos ================= */
   document.addEventListener('click', function (ev) {
+    var fk = ev.target.closest('[data-fpin]');
+    if (fk) { teclaFin(fk.getAttribute('data-fpin')); return; }
     var pk = ev.target.closest('[data-pin]');
     if (pk) { teclaPin(pk.getAttribute('data-pin')); return; }
     var el = ev.target.closest('[data-acao]');
@@ -3542,7 +3619,7 @@ body.mapa-aberto main { padding-bottom: 0; }
       case 'modulo': trocarModulo(id); break;
       case 'modulos': trocarModulo('home'); break;
       case 'modulosLista':
-        abrirSheet('<h2><span>Painéis</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2><div class="lista">' + MODULOS.map(function (m) {
+        abrirSheet('<h2><span>Painéis</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2><div class="lista">' + MODULOS.filter(function (m) { return !m.oculto; }).map(function (m) {
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
@@ -3725,6 +3802,7 @@ body.mapa-aberto main { padding-bottom: 0; }
       case 'mvLancar': lerFV(); FV.lancar = !FV.lancar; renderFormMov(); break;
       case 'mvSalvar': salvarFV(); break;
       case 'holerites': abrirHolerites(); break;
+      case 'livro': var lv2 = el.getAttribute('data-v'); if ((lv2 === 'emp') !== (S.modulo === 'emp')) { var v0 = S.view, m0 = S.mes; trocarModulo(lv2 === 'emp' ? 'emp' : 'fin'); S.view = v0; S.mes = m0; render(); } break;
       // financeiro empresa
       case 'fPessoal': lerForm(); FORM.pessoal = el.getAttribute('data-v'); renderForm(); break;
       case 'irEmpresa': var mesAlvo = id; fecharSheet(); trocarModulo('emp'); S.mes = mesAlvo; S.view = 'mes'; render(); break;
@@ -3935,6 +4013,10 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (t.id === 'foParc' && FO) { lerFO(); atualizarTotaisFO(); }
   });
   document.addEventListener('keydown', function (ev) {
+    if ($('#finLock') && $('#sheet').hidden) { // teclado físico na tela de PIN do Financeiro
+      if (/^\d$/.test(ev.key)) { teclaFin(ev.key); return; }
+      if (ev.key === 'Backspace') { teclaFin('del'); return; }
+    }
     if (!$('#pin').hidden) {
       if (/^\d$/.test(ev.key)) teclaPin(ev.key);
       else if (ev.key === 'Backspace') teclaPin('del');
@@ -3968,6 +4050,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   // Recarrega dados ao voltar para o app (ex.: depois de horas em segundo plano).
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden' && mapaSujo) salvarMapaAgora(); // app foi para segundo plano: salva o mapa já
+    if (document.visibilityState === 'visible' && (S.modulo === 'fin' || S.modulo === 'emp') && !finLiberado()) { fecharSheet(); render(); return; }
     if (document.visibilityState === 'visible' && S.token && S.d && S.pend === 0 && $('#sheet').hidden && !(S.modulo === 'map' && S.mapa)) {
       if (S.modulo === 'fin' || S.modulo === 'emp') recarregarLivro(S.livro);
       else { var cm = CARGA_MOD[S.modulo]; api(cm[0]).then(function (d) { if (S.pend === 0) { S[cm[1]] = d; render(); } }, function () {}); }
