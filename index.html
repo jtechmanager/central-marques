@@ -511,6 +511,12 @@ body.mapa-aberto main { padding-bottom: 0; }
 .meta-anel small { color: var(--muted); font-size: 13px; }
 .btn:disabled { cursor: not-allowed; }
 
+/* ---------- holerites ---------- */
+.hol-atalho { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow); margin: -6px 0 16px; }
+.hol-atalho .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hol-atalho small { font-size: 12.5px; }
+.hol-atalho > svg { color: var(--muted); }
+
 /* ---------- pessoas (de quem) ---------- */
 .tag.pessoa { background: var(--accent-soft); color: var(--accent); }
 .chip.leve { padding: 8px 12px; display: inline-flex; align-items: center; }
@@ -938,6 +944,42 @@ body.mapa-aberto main { padding-bottom: 0; }
       '<button class="check" data-acao="pagar" data-id="' + l.id + '" aria-label="' + (pago ? 'Marcar como pendente' : 'Marcar como pago') + '">' + ic('check') + '</button></div>';
   }
 
+  /* ----- holerites (receitas de salário/bonificação recebidas, com ou sem foto anexada) ----- */
+  var HOL_ABERTO = false;
+  var CATS_HOLERITE = ['Salário', 'Bonificação'];
+  function ehHolerite(l) { return l.tipo === 'Receita' && CATS_HOLERITE.indexOf(l.categoria) >= 0; }
+  function receitasHolerite() {
+    var p = S.pessoa === '*' ? padraoPessoa() : S.pessoa;
+    return S.d.lancamentos.filter(function (l) { return ehHolerite(l) && (l.titular || padraoPessoa()) === p && l.mes <= S.d.mesAtual && (l.status === 'Pago' || l.mes < S.d.mesAtual); });
+  }
+  function resumoHolerites() {
+    var L = receitasHolerite(), sem = L.filter(function (l) { return !l.anexoId; }).sort(function (a, b) { return b.vencimento.localeCompare(a.vencimento); });
+    return { total: L.length, comFoto: L.length - sem.length, faltaMes: sem.length ? sem[0].mes : '' };
+  }
+  function abrirHolerites() {
+    HOL_ABERTO = true;
+    var L = receitasHolerite(), porMes = {}, meses = [];
+    L.forEach(function (l) { if (!porMes[l.mes]) { porMes[l.mes] = []; meses.push(l.mes); } porMes[l.mes].push(l); });
+    meses.sort().reverse();
+    var r = resumoHolerites();
+    var h = '<h2><span>🧾 Holerites' + (S.pessoa !== '*' && S.pessoa !== padraoPessoa() ? ' · ' + esc(S.pessoa) : '') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="saldo" style="box-shadow:none;background:var(--surface-2)"><div class="linha"><span class="muted">Com foto</span><span class="v num">' + r.comFoto + ' / ' + r.total + '</span></div>' +
+      '<div class="barra"><i style="width:' + (r.total ? r.comFoto / r.total * 100 : 0) + '%"></i></div><div class="sub"><span>Fotos salvas na pasta HOLERITES HIGOR</span></div></div>';
+    if (!meses.length) h += '<p class="muted">Nenhuma receita de Salário ou Bonificação recebida ainda.</p>';
+    meses.forEach(function (m) {
+      var tot = soma(porMes[m]);
+      h += '<div class="secao"><span style="text-transform:capitalize">' + nomeMes(m) + '</span><span class="num">' + brl(tot) + '</span></div><div class="card" style="padding:2px 12px">';
+      porMes[m].sort(function (a, b) { return a.vencimento.localeCompare(b.vencimento); }).forEach(function (l) {
+        h += '<div class="hist"><div class="ic ' + (l.anexoId ? 'pago' : 'pend') + '">' + ic(l.anexoId ? 'check' : 'clip') + '</div><div class="corpo"><div class="t1">' + esc(l.descricao) + '</div>' +
+          '<div class="t2 num">' + brl(l.valor) + ' · ' + (l.status === 'Pago' ? 'recebido ' + dataBR(l.dataPagamento || l.vencimento) : 'não marcado como recebido') + '</div></div>' +
+          (l.anexoId ? '<button class="chip leve" data-acao="verAnexo" data-id="' + l.id + '">' + ic('eye') + '<span style="margin-left:4px">Ver</span></button>'
+            : '<label class="chip leve" style="cursor:pointer;color:var(--accent)">' + ic('plus') + '<span style="margin-left:4px">Foto</span><input type="file" accept="image/*,application/pdf" hidden data-anexar="' + l.id + '"></label>') + '</div>';
+      });
+      h += '</div>';
+    });
+    abrirSheet(h);
+  }
+
   /* ----- de quem (pessoa) ----- */
   function padraoPessoa() { return (S.d && S.d.titularPadrao) || 'Higor'; }
   function lancs() {
@@ -995,6 +1037,10 @@ body.mapa-aberto main { padding-bottom: 0; }
     h += '<div class="saldo"><div class="linha"><span class="muted">Saldo previsto do mês</span><span class="v num" style="color:' + (saldo >= 0 ? 'var(--green)' : 'var(--red)') + '">' + brl(saldo) + '</span></div>' +
       '<div class="barra"><i style="width:' + pct + '%"></i></div><div class="sub"><span>' + pct + '% das despesas pagas</span><span>Recebido ' + brl(rRec) + '</span></div></div>';
 
+    var hs = resumoHolerites();
+    if (hs.total) h += '<button class="hol-atalho" data-acao="holerites"><span class="hab-ic" style="width:40px;height:40px;font-size:20px">🧾</span><span class="corpo"><b>Holerites</b><small class="muted">' +
+      hs.comFoto + ' de ' + hs.total + ' com foto' + (hs.faltaMes ? ' · falta o de ' + MESES[+hs.faltaMes.slice(5, 7) - 1] : '') + '</small></span>' +
+      (hs.total - hs.comFoto ? '<span class="tag hoje">' + (hs.total - hs.comFoto) + ' faltando</span>' : '<span class="tag okv">em dia ✓</span>') + ic('right') + '</button>';
     var F = { todos: 'Todos', pend: 'A pagar', pago: 'Pagos', rec: 'Receitas', desp: 'Despesas' };
     h += '<div class="chips">' + Object.keys(F).map(function (k) { return '<button class="chip' + (S.filtro === k ? ' ativo' : '') + '" data-acao="filtro" data-id="' + k + '">' + F[k] + '</button>'; }).join('') + '</div>';
 
@@ -1159,11 +1205,12 @@ body.mapa-aberto main { padding-bottom: 0; }
 
   /* ----- folha (sheet) ----- */
   function abrirSheet(html) { $('#sheetBody').innerHTML = '<div class="alca"></div>' + html; $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; }
-  function fecharSheet() { $('#sheet').hidden = true; document.body.style.overflow = ''; FORM = null; }
+  function fecharSheet() { $('#sheet').hidden = true; document.body.style.overflow = ''; FORM = null; HOL_ABERTO = false; }
 
   /* ----- detalhe ----- */
   function abrirDetalhe(id) {
     var l = acharL(id); if (!l) return;
+    HOL_ABERTO = false;
     var pago = l.status === 'Pago', rec = l.tipo === 'Receita';
     var h = '<h2><span>' + esc(l.descricao) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
     h += '<div class="det-topo"><div class="v num" style="color:' + (rec ? 'var(--green)' : 'var(--text)') + '">' + brl(l.valor) + '</div><div class="s">' +
@@ -1335,7 +1382,11 @@ body.mapa-aberto main { padding-bottom: 0; }
         return lerArquivo(file).then(function (b) { return { mime: file.type, base64: b }; });
       });
     prep.then(function (a) { a.id = id; return mutar('anexar', a); })
-      .then(function () { toast('Comprovante salvo no Drive'); if (!$('#sheet').hidden) abrirDetalhe(id); })
+      .then(function () {
+        var l2 = acharL(id), hol = l2 && ehHolerite(l2);
+        toast(hol ? 'Holerite salvo na pasta HOLERITES HIGOR' : 'Comprovante salvo no Drive');
+        if (!$('#sheet').hidden) { if (HOL_ABERTO) abrirHolerites(); else abrirDetalhe(id); }
+      })
       .catch(function (e) { if (e.message !== 'sessao' && e.message.indexOf('Formato') < 0) toast(esc(e.message), true); });
   }
   function verAnexo(id) {
@@ -3225,6 +3276,7 @@ body.mapa-aberto main { padding-bottom: 0; }
       case 'mvTipo': lerFV(); FV.tipo = el.getAttribute('data-v'); renderFormMov(); break;
       case 'mvLancar': lerFV(); FV.lancar = !FV.lancar; renderFormMov(); break;
       case 'mvSalvar': salvarFV(); break;
+      case 'holerites': abrirHolerites(); break;
       // início (cards)
       case 'homePers': FC = null; abrirPersonalizar(); break;
       case 'cardEditar': editarCard(id); break;
