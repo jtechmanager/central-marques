@@ -660,6 +660,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     box: '<path d="M21 8l-9-5-9 5 9 5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
     mind: '<circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="2"/><circle cx="19.5" cy="6" r="2"/><circle cx="4.5" cy="18" r="2"/><circle cx="19.5" cy="18" r="2"/><path d="M9.5 10.5L6.2 7.2M14.5 10.5l3.3-3.3M9.5 13.5l-3.3 3.3M14.5 13.5l3.3 3.3"/>',
     fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
@@ -691,7 +692,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     pessoa: 'Higor', // ao abrir, sempre só os lançamentos do Higor
     m: null, mview: store('cm_mview') || 'metas', metPes: 'Higor',
     k: null, kview: store('cm_kview') || 'Cotando', kLista: '',
-    p: null, mapa: null, mapaVis: store('cm_mapavis') || 'mapa', noSel: null };
+    p: null, mapa: null, mapaVis: store('cm_mapavis') || 'mapa', noSel: null,
+    livro: 'pes', dPes: null, dEmp: null };
   var VIEWS = [
     { id: 'mes', nome: 'Mês', ic: 'cal' }, { id: 'pend', nome: 'Pendentes', ic: 'alert' },
     { id: 'prev', nome: 'Previsão', ic: 'trend' }, { id: 'anal', nome: 'Análise', ic: 'pie' },
@@ -700,6 +702,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   var MODULOS = [
     { id: 'home', nome: 'Início', ic: 'home' },
     { id: 'fin', nome: 'Financeiro', ic: 'wallet' },
+    { id: 'emp', nome: 'Financeiro Empresa', ic: 'briefcase' },
     { id: 'tar', nome: 'Tarefas', ic: 'kanban' },
     { id: 'hab', nome: 'Hábitos', ic: 'flame' },
     { id: 'doc', nome: 'Documentos', ic: 'idcard' },
@@ -735,9 +738,13 @@ body.mapa-aberto main { padding-bottom: 0; }
       return r.json();
     });
   }
+  // Ações do motor financeiro levam o livro aberto (pessoal ou empresa), salvo se a chamada já disser qual.
+  var ACOES_FIN = ['carregar', 'criar', 'editar', 'alternarPago', 'repetir', 'excluir', 'anexar', 'removerAnexo', 'verAnexo', 'renomearPessoa', 'empresaNome'];
   function api(acao, dados) {
+    dados = dados || {};
+    if (ACOES_FIN.indexOf(acao) >= 0 && !dados.livro) dados.livro = S.livro;
     setCarga(1);
-    return chamar('api', [S.token, acao, dados || {}]).then(function (r) {
+    return chamar('api', [S.token, acao, dados]).then(function (r) {
       setCarga(-1);
       if (!r || !r.ok) {
         if (r && r.sessao === false) { bloquear('Sessão expirada. Digite o PIN.'); throw new Error('sessao'); }
@@ -752,10 +759,17 @@ body.mapa-aberto main { padding-bottom: 0; }
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
+    var livroCall = S.livro; // o livro pode mudar enquanto a chamada está em andamento
+    if (chave === 'd' && dados && !dados.livro) dados.livro = livroCall;
     var p = S.fila.then(function () { return api(acao, dados); });
     S.fila = p.catch(function () {});
     return p.then(function (d) {
-      if (--S.pend === 0) { S[chave] = d; render(); }
+      if (chave === 'd') {
+        guardarLivro(livroCall, d);
+        // itens ligados ao sócio aparecem nos dois livros: atualiza o outro em segundo plano
+        if (livroCall === 'emp' || String(dados && dados.id || '').indexOf('emp:') === 0) recarregarLivro(livroCall === 'emp' ? 'pes' : 'emp');
+        if (--S.pend === 0) render();
+      } else if (--S.pend === 0) { S[chave] = d; render(); }
       return d;
     }, function (e) {
       S.pend--;
@@ -818,7 +832,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   function bloquear(msg) {
     if (S.token) chamar('sair', [S.token]).catch(function () {});
-    S.token = null; store('cm_token', null); S.d = null;
+    S.token = null; store('cm_token', null); S.d = null; S.dPes = null; S.dEmp = null;
     fecharSheet();
     $('#app').hidden = true; $('#pin').hidden = false;
     $('#pinMsg').textContent = msg || '';
@@ -832,15 +846,28 @@ body.mapa-aberto main { padding-bottom: 0; }
     montarCasca();
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
-    var ordem = [S.modulo].concat(['home', 'fin', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }));
+    var ordem = [S.modulo].concat(['home', 'fin', 'emp', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }));
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'd'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'] };
+  /* Dois livros financeiros: S.dPes e S.dEmp; S.d aponta para o livro aberto (S.livro). */
+  function guardarLivro(livro, d) {
+    if (livro === 'emp') S.dEmp = d; else S.dPes = d;
+    if (S.livro === livro) S.d = d;
+    if (!S.mes && d && d.mesAtual) S.mes = d.mesAtual;
+  }
+  function recarregarLivro(livro) {
+    api('carregar', { livro: livro }).then(function (d) { guardarLivro(livro, d); if (S.pend === 0 && (S.livro === livro || S.modulo === 'home')) render(); }, function () {});
+  }
+  function abrirLivro(livro) { S.livro = livro; S.d = livro === 'emp' ? S.dEmp : S.dPes; }
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'dPes'], emp: ['carregar', 'dEmp'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
+    if (id === 'fin' || id === 'emp') {
+      var lv = id === 'emp' ? 'emp' : 'pes';
+      return api('carregar', { livro: lv }).then(function (d) { guardarLivro(lv, d); render(); });
+    }
     return api(c[0]).then(function (d) {
       S[c[1]] = d;
-      if (id === 'fin' && !S.mes) S.mes = d.mesAtual;
       if (id === 'hab' && !S.hdia) S.hdia = d.hoje;
       render();
     });
@@ -868,8 +895,11 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (!m || m.breve) { toast('Este painel chega em breve'); return; }
     if (S.modulo === 'map' && id !== 'map') salvarMapaAgora(); // não perde o que foi editado no mapa
     S.modulo = id; store('cm_mod', id);
+    // Financeiro Empresa usa as mesmas telas do Financeiro, com o livro da empresa
+    abrirLivro(id === 'emp' ? 'emp' : 'pes');
+    if (id === 'emp') S.pessoa = '*'; else if (id === 'fin') S.pessoa = 'Higor';
     pintarModulos(); fecharSheet(); window.scrollTo(0, 0);
-    if (id !== 'fin' && !S[CARGA_MOD[id][1]]) {
+    if (CARGA_MOD[id] && !S[CARGA_MOD[id][1]]) {
       $('#view').innerHTML = '<div class="esqueleto" style="height:48px"></div><div class="esqueleto"></div><div class="esqueleto"></div>';
       carregarModulo(id).catch(function (e) { if (e.message !== 'sessao') toast(esc(e.message), true); });
     }
@@ -934,7 +964,9 @@ body.mapa-aberto main { padding-bottom: 0; }
       tags.push('<span>' + (l.tipo === 'Receita' ? 'Recebido' : 'Pago') + (l.dataPagamento ? ' ' + dataBR(l.dataPagamento) : '') + '</span>');
     }
     tags.push('<span>' + esc(l.categoria) + '</span>');
-    if (l.titular && l.titular !== padraoPessoa()) tags.push('<span class="tag pessoa">' + esc(l.titular) + '</span>');
+    if (S.livro === 'pes' && l.titular && l.titular !== padraoPessoa()) tags.push('<span class="tag pessoa">' + esc(l.titular) + '</span>');
+    if (l.origem === 'emp') tags.push('<span class="tag pessoa">🏢 ' + esc((S.dEmp && S.dEmp.empresaNome) || (S.d && S.d.empresaNome) || 'Empresa') + '</span>');
+    if (S.livro === 'emp' && l.pessoal) tags.push('<span class="tag pessoa">' + (l.pessoal === 'receita' ? '💸 retirada' : l.tipo === 'Receita' ? '👤 aporte meu' : '👤 pago por mim') + '</span>');
     if (l.recorrencia === 'Parcelado') tags.push('<span class="tag">' + l.parcela + '/' + l.totalParcelas + '</span>');
     if (l.recorrencia === 'Fixo') tags.push('<span class="tag" title="Fixo">' + ic('repeat') + (l.repetir ? 'repete' : 'fixo') + '</span>');
     if (l.anexoId) tags.push('<span class="tag">' + ic('clip') + '</span>');
@@ -991,7 +1023,13 @@ body.mapa-aberto main { padding-bottom: 0; }
     S.d.lancamentos.forEach(function (l) { var t = l.titular || padraoPessoa(); c[t] = (c[t] || 0) + 1; });
     return Object.keys(c).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || c[b] - c[a] || a.localeCompare(b); });
   }
+  function quemPagaTxt(l) {
+    if (!l.pessoal) return l.tipo === 'Receita' ? '🏢 Cliente / conta da empresa' : '🏢 Conta da empresa';
+    if (l.pessoal === 'receita') return '💸 Retirada para mim (pró-labore)';
+    return l.tipo === 'Receita' ? '👤 Aporte meu (saiu do pessoal)' : '👤 Meu dinheiro pessoal';
+  }
   function pessoaChips() {
+    if (S.livro === 'emp') return chipEmpresa();
     var P = pessoas();
     if (P.length < 2 && S.pessoa !== '*') return '';
     return '<div class="chips pessoas" style="margin-top:2px">' + P.map(function (p) {
@@ -1034,7 +1072,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     h += '<div class="cards">' +
       card('Receitas', rec, 'var(--green)') + card('Despesas', desp, 'var(--red)') +
       card('Já pago', dPago, 'var(--muted)') + card('A pagar', dPend, 'var(--amber)') + '</div>';
-    h += '<div class="saldo"><div class="linha"><span class="muted">Saldo previsto do mês</span><span class="v num" style="color:' + (saldo >= 0 ? 'var(--green)' : 'var(--red)') + '">' + brl(saldo) + '</span></div>' +
+    h += '<div class="saldo"><div class="linha"><span class="muted">' + (S.livro === 'emp' ? 'Resultado do mês (lucro/prejuízo)' : 'Saldo previsto do mês') + '</span><span class="v num" style="color:' + (saldo >= 0 ? 'var(--green)' : 'var(--red)') + '">' + brl(saldo) + '</span></div>' +
       '<div class="barra"><i style="width:' + pct + '%"></i></div><div class="sub"><span>' + pct + '% das despesas pagas</span><span>Recebido ' + brl(rRec) + '</span></div></div>';
 
     var hs = resumoHolerites();
@@ -1130,8 +1168,23 @@ body.mapa-aberto main { padding-bottom: 0; }
     var top = L.slice().sort(function (a, b) { return b.valor - a.valor; }).slice(0, 5);
     if (top.length) h += '<div class="secao"><span>Maiores gastos</span></div><div class="lista">' + top.map(function (l) { return itemHtml(l); }).join('') + '</div>';
 
+    // Empresa: quanto o sócio colocou e quanto retirou no mês
+    if (S.livro === 'emp') {
+      var dm = S.d.lancamentos.filter(function (l) { return l.mes === S.mes; });
+      var pagoSocio = soma(dm.filter(function (l) { return l.tipo === 'Despesa' && l.pessoal === 'despesa'; }));
+      var aportes = soma(dm.filter(function (l) { return l.tipo === 'Receita' && l.pessoal === 'despesa'; }));
+      var retiradas = soma(dm.filter(function (l) { return l.pessoal === 'receita'; }));
+      var recEmp = soma(dm.filter(function (l) { return l.tipo === 'Receita' && !l.pessoal; }));
+      h += '<div class="secao"><span>Sócio ↔ empresa</span></div><div class="card">' +
+        '<div class="cat-linha"><span class="nome">👤 Pago com meu dinheiro</span><span class="num"><b>' + brl(pagoSocio) + '</b></span></div>' +
+        '<div class="cat-linha"><span class="nome">👤 Aportes que fiz</span><span class="num"><b>' + brl(aportes) + '</b></span></div>' +
+        '<div class="cat-linha"><span class="nome">💸 Retiradas / pró-labore</span><span class="num"><b>' + brl(retiradas) + '</b></span></div>' +
+        '<div class="cat-linha"><span class="nome">🏢 Receitas de clientes</span><span class="num"><b>' + brl(recEmp) + '</b></span></div>' +
+        '<p class="muted" style="font-size:12.5px;margin:8px 0 2px">' + (pagoSocio + aportes > retiradas ? 'Neste mês você colocou ' + brl(pagoSocio + aportes - retiradas) + ' a mais do que retirou da empresa.' : 'Neste mês você retirou ' + brl(retiradas - pagoSocio - aportes) + ' a mais do que colocou.') + '</p></div>';
+    }
+
     // Por pessoa (sempre todas as pessoas, no mês escolhido)
-    if (pessoas().length > 1) {
+    if (S.livro === 'pes' && pessoas().length > 1) {
       var doMes = S.d.lancamentos.filter(function (l) { return l.mes === S.mes; }), pp = {};
       doMes.forEach(function (l) { var t = l.titular || padraoPessoa(); pp[t] = pp[t] || { r: 0, d: 0, pend: 0 }; if (l.tipo === 'Receita') pp[t].r += l.valor; else { pp[t].d += l.valor; if (l.status === 'Pendente') pp[t].pend += l.valor; } });
       var nomes = Object.keys(pp).sort(function (a, b) { return (b === padraoPessoa()) - (a === padraoPessoa()) || pp[b].d - pp[a].d; });
@@ -1219,9 +1272,12 @@ body.mapa-aberto main { padding-bottom: 0; }
       (l.recorrencia === 'Fixo' ? '<span class="tag">' + ic('repeat') + 'Fixo mensal</span>' : '') + '</div></div>';
     h += '<div class="det-grid"><div><small>Vencimento</small><b>' + dataBRc(l.vencimento) + '</b></div><div><small>Categoria</small><b>' + esc(l.categoria) + '</b></div>' +
       '<div><small>Tipo</small><b>' + l.tipo + '</b></div><div><small>Mês</small><b style="text-transform:capitalize">' + nomeMes(l.mes) + '</b></div>' +
-      '<div style="grid-column:1/-1"><small>De quem</small><b>' + esc(l.titular || padraoPessoa()) + '</b></div></div>';
+      (S.livro === 'emp' ? '<div style="grid-column:1/-1"><small>Quem paga</small><b>' + quemPagaTxt(l) + '</b></div>' :
+        '<div style="grid-column:1/-1"><small>De quem</small><b>' + esc(l.titular || padraoPessoa()) + '</b></div>') + '</div>';
+    if (l.origem === 'emp') h += '<div class="aviso-box" style="background:var(--accent-soft);color:var(--accent)">' + ic('briefcase') + '<span>Lançamento do <b>' + esc(nomeModulo('emp')) + '</b> ligado ao seu dinheiro pessoal. Pagar e anexar funcionam aqui; para editar, abra na empresa.</span></div>';
+    if (S.livro === 'emp' && l.pessoal) h += '<div class="aviso-box" style="background:var(--accent-soft);color:var(--accent)">' + ic('wallet') + '<span>Também aparece no seu <b>Financeiro pessoal</b> como ' + (l.pessoal === 'receita' ? 'receita' : 'despesa') + '.</span></div>';
     if (l.obs) h += '<p class="muted" style="margin:0 0 14px;white-space:pre-wrap">' + esc(l.obs) + '</p>';
-    if (l.recorrencia === 'Fixo') {
+    if (l.recorrencia === 'Fixo' && l.origem !== 'emp') {
       h += '<button class="toggle-linha" data-acao="repetir" data-id="' + l.id + '" style="width:100%;text-align:left"><span><b>Repetir no próximo mês</b><small>' +
         (l.repetir ? 'Vai aparecer em ' + nomeMes(somarMes(l.mes, 1)) : 'Não será lançado em ' + nomeMes(somarMes(l.mes, 1))) + '</small></span><span class="sw' + (l.repetir ? ' on' : '') + '"></span></button>';
     }
@@ -1229,7 +1285,9 @@ body.mapa-aberto main { padding-bottom: 0; }
       (l.anexoId ? '<button class="icon-btn" data-acao="verAnexo" data-id="' + l.id + '" title="Ver">' + ic('eye') + '</button>' : '') +
       '<label class="icon-btn" title="Anexar" style="cursor:pointer;color:var(--accent)">' + ic(l.anexoId ? 'edit' : 'plus') + '<input type="file" accept="image/*,application/pdf" hidden data-anexar="' + l.id + '"></label></div>';
     h += '<div class="acoes"><button class="btn ' + (pago ? 'sec' : 'ok') + '" data-acao="pagarDet" data-id="' + l.id + '">' + ic(pago ? 'undo' : 'check') + (pago ? 'Voltar para pendente' : (rec ? 'Marcar como recebido' : 'Marcar como pago')) + '</button>' +
-      '<div class="acoes g2"><button class="btn sec" data-acao="editar" data-id="' + l.id + '">' + ic('edit') + 'Editar</button><button class="btn perigo" data-acao="excluir" data-id="' + l.id + '">' + ic('trash') + 'Excluir</button></div></div>';
+      (l.origem === 'emp'
+        ? '<button class="btn sec" data-acao="irEmpresa" data-id="' + l.mes + '">' + ic('briefcase') + 'Abrir no ' + esc(nomeModulo('emp')) + '</button>'
+        : '<div class="acoes g2"><button class="btn sec" data-acao="editar" data-id="' + l.id + '">' + ic('edit') + 'Editar</button><button class="btn perigo" data-acao="excluir" data-id="' + l.id + '">' + ic('trash') + 'Excluir</button></div>') + '</div>';
     abrirSheet(h);
   }
 
@@ -1252,12 +1310,12 @@ body.mapa-aberto main { padding-bottom: 0; }
       var ult = new Date(+S.mes.slice(0, 4), +S.mes.slice(5, 7), 0).getDate();
       venc = S.mes + '-' + ('0' + Math.min(+S.d.hoje.slice(8, 10), ult)).slice(-2);
     }
-    FORM = { modo: 'novo', tipo: tipo || 'Despesa', recorrencia: 'Unico', descricao: '', cents: 0, categoria: '', vencimento: venc, repetir: true, parcela: 1, total: 2, obs: '', jaPago: false, titular: S.pessoa !== '*' ? S.pessoa : padraoPessoa(), novaPessoa: false };
+    FORM = { modo: 'novo', tipo: tipo || 'Despesa', recorrencia: 'Unico', descricao: '', cents: 0, categoria: '', vencimento: venc, repetir: true, parcela: 1, total: 2, obs: '', jaPago: false, titular: S.pessoa !== '*' ? S.pessoa : padraoPessoa(), novaPessoa: false, pessoal: '' };
     renderForm();
   }
   function editarForm(id) {
     var l = acharL(id);
-    FORM = { modo: 'editar', id: id, tipo: l.tipo, recorrencia: l.recorrencia, descricao: l.descricao, cents: Math.round(l.valor * 100), categoria: l.categoria, vencimento: l.vencimento, obs: l.obs, grupo: !!l.grupo, aplicarProximos: false, parcela: l.parcela, total: l.totalParcelas, titular: l.titular || padraoPessoa(), novaPessoa: false };
+    FORM = { modo: 'editar', id: id, tipo: l.tipo, recorrencia: l.recorrencia, descricao: l.descricao, cents: Math.round(l.valor * 100), categoria: l.categoria, vencimento: l.vencimento, obs: l.obs, grupo: !!l.grupo, aplicarProximos: false, parcela: l.parcela, total: l.totalParcelas, titular: l.titular || padraoPessoa(), novaPessoa: false, pessoal: l.pessoal || '' };
     renderForm();
   }
   function catsDo(tipo) { return S.d.categorias.filter(function (c) { return c.tipo === tipo; }); }
@@ -1303,7 +1361,22 @@ body.mapa-aberto main { padding-bottom: 0; }
     var ini = f.vencimento.slice(0, 7), fim = somarMes(ini, n - 1);
     return 'Gera ' + n + ' parcela(s): ' + f.parcela + '/' + f.total + ' em ' + mesCurto(ini) + ' até ' + f.total + '/' + f.total + ' em <b>' + mesCurto(fim) + '</b>' + (f.cents ? ' · total ' + brl(n * f.cents / 100) : '');
   }
+  /** Barra do topo no livro da empresa: nome editável + atalho para o resumo sócio/empresa. */
+  function chipEmpresa() {
+    var nome = (S.d && S.d.empresaNome) || 'Empresa';
+    return '<div class="chips"><button class="chip ativo" data-acao="empNome">🏢 ' + esc(nome) + ' <span style="opacity:.7;margin-left:4px">✏️</span></button></div>';
+  }
+  function campoQuemPaga(f) {
+    var ops = f.tipo === 'Receita' ? [['', '🏢 Cliente / venda'], ['despesa', '👤 Aporte meu']] : [['', '🏢 Conta da empresa'], ['despesa', '👤 Meu dinheiro'], ['receita', '💸 Retirada p/ mim']];
+    if (!ops.some(function (o) { return o[0] === (f.pessoal || ''); })) f.pessoal = '';
+    var ajuda = f.pessoal === 'despesa' ? (f.tipo === 'Receita' ? 'Dinheiro que você colocou na empresa. Aparece como despesa no seu Financeiro pessoal.' : 'A empresa registra a despesa e ela também aparece no seu Financeiro pessoal, como saída do seu dinheiro.')
+      : f.pessoal === 'receita' ? 'Pró-labore ou retirada: despesa na empresa e receita no seu Financeiro pessoal.' : 'Fica só no financeiro da empresa.';
+    return '<label class="campo" style="margin-bottom:6px"><span>' + (f.tipo === 'Receita' ? 'De onde vem?' : 'Quem paga?') + '</span></label><div class="seg quem-paga">' +
+      ops.map(function (o) { return '<button data-acao="fPessoal" data-v="' + o[0] + '" class="' + ((f.pessoal || '') === o[0] ? 'ativo' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+      '<p class="muted" style="font-size:12.5px;margin:-6px 0 14px">' + ajuda + '</p>';
+  }
   function campoPessoa(f) {
+    if (S.livro === 'emp') return campoQuemPaga(f);
     var P = pessoas(); if (P.indexOf(f.titular) < 0 && !f.novaPessoa) P.push(f.titular);
     return '<div class="campo"><span>De quem</span><div class="chips quem">' + P.map(function (p) { return '<button class="chip' + (!f.novaPessoa && f.titular === p ? ' ativo' : '') + '" data-acao="fPessoa" data-v="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') +
       '<button class="chip' + (f.novaPessoa ? ' ativo' : '') + '" data-acao="fPessoaNova">+ Outro</button></div>' +
@@ -1338,8 +1411,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (f.modo === 'novo') {
       acao = 'criar';
       dados.tipo = f.tipo; dados.recorrencia = f.recorrencia; dados.repetir = f.repetir; dados.jaPago = f.jaPago;
-      dados.parcela = f.parcela; dados.totalParcelas = f.total; dados.titular = f.titular;
-    } else { acao = 'editar'; dados.id = f.id; dados.aplicarProximos = f.aplicarProximos; dados.titular = f.titular; }
+      dados.parcela = f.parcela; dados.totalParcelas = f.total; dados.titular = f.titular; dados.pessoal = f.pessoal || '';
+    } else { acao = 'editar'; dados.id = f.id; dados.aplicarProximos = f.aplicarProximos; dados.titular = f.titular; if (S.livro === 'emp') dados.pessoal = f.pessoal || ''; }
     var novoMes = f.vencimento.slice(0, 7);
     mutar(acao, dados).then(function () {
       fecharSheet();
@@ -1858,6 +1931,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   /* ================= INÍCIO (cards) ================= */
   var CARD_PADRAO = {
     fin: { nome: 'Financeiro', descricao: 'Receitas, despesas, parcelas e previsão do mês', emoji: '💰', cor: '#15803d' },
+    emp: { nome: 'Financeiro Empresa', descricao: 'Receitas, despesas e resultado da empresa', emoji: '🏢', cor: '#334155' },
     tar: { nome: 'Tarefas', descricao: 'Kanban com checklists, tags e prazos', emoji: '📋', cor: '#2563eb' },
     hab: { nome: 'Hábitos', descricao: 'Check-in diário e sequências', emoji: '🔥', cor: '#ea580c' },
     doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' },
@@ -1865,7 +1939,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' },
     map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' }
   };
-  var PAINEIS_REAIS = ['fin', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'];
+  var PAINEIS_REAIS = ['fin', 'emp', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'];
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -1906,10 +1980,17 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   function resumoCard(m) {
     try {
-      if (m === 'fin' && S.d) {
-        var meus = S.d.lancamentos.filter(function (l) { return (l.titular || padraoPessoa()) === padraoPessoa(); });
-        var venc = meus.filter(function (l) { return l.status === 'Pendente' && l.tipo === 'Despesa' && l.vencimento < S.d.hoje; });
-        var pend = soma(meus.filter(function (l) { return l.mes === S.d.mesAtual && l.tipo === 'Despesa' && l.status === 'Pendente'; }));
+      if (m === 'emp' && S.dEmp) {
+        var E = S.dEmp, doMes = E.lancamentos.filter(function (l) { return l.mes === E.mesAtual; });
+        if (!E.lancamentos.length) return { txt: 'Comece lançando receitas e despesas' };
+        var res = soma(doMes.filter(function (l) { return l.tipo === 'Receita'; })) - soma(doMes.filter(function (l) { return l.tipo === 'Despesa'; }));
+        var vE = E.lancamentos.filter(function (l) { return l.status === 'Pendente' && l.vencimento < E.hoje; }).length;
+        return { txt: (vE ? vE + ' vencido(s) · ' : '') + 'Resultado do mês ' + brl(res), alerta: vE > 0 };
+      }
+      if (m === 'fin' && S.dPes) {
+        var DP = S.dPes, meus = DP.lancamentos.filter(function (l) { return (l.titular || padraoPessoa()) === padraoPessoa(); });
+        var venc = meus.filter(function (l) { return l.status === 'Pendente' && l.tipo === 'Despesa' && l.vencimento < DP.hoje; });
+        var pend = soma(meus.filter(function (l) { return l.mes === DP.mesAtual && l.tipo === 'Despesa' && l.status === 'Pendente'; }));
         if (venc.length) return { txt: venc.length + ' vencida(s) · ' + brl(soma(venc)), alerta: true };
         return { txt: pend ? 'A pagar no mês ' + brl(pend) : 'Contas do mês em dia ✓' };
       }
@@ -2241,7 +2322,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     }, function () { b.disabled = false; b.textContent = 'Tentar de novo'; });
   }
   // A movimentação pode ter criado/apagado lançamento: recarrega o Financeiro em segundo plano.
-  function atualizarFinanceiroDepois() { api('carregar').then(function (d) { S.d = d; if (S.modulo === 'fin' || S.modulo === 'home') render(); }, function () {}); }
+  function atualizarFinanceiroDepois(livro) { recarregarLivro(livro || 'pes'); }
 
   /* ================= MAPAS MENTAIS ================= */
   var COR_RAMOS = ['#2563eb', '#db2777', '#16a34a', '#ea580c', '#7c3aed', '#0891b2', '#ca8a04', '#dc2626'];
@@ -2854,7 +2935,10 @@ body.mapa-aberto main { padding-bottom: 0; }
   function formAprovar(id) {
     var Q = cotsDe(id), hoje = S.k.hoje;
     var best = Q[0];
-    FA = { id: id, cotacaoId: best.id, destino: 'fin', vencimento: hoje, parcelas: best.parcelas, categoria: best.parcelas > 1 ? 'Compras parceladas' : 'Outros', metaModo: 'nova', metaId: '', prazo: '' };
+    var xc = S.k.compras.find(function (o) { return o.id === id; });
+    var daEmpresa = S.dEmp && xc && xc.titular === S.dEmp.empresaNome;
+    FA = { id: id, cotacaoId: best.id, destino: 'fin', livro: daEmpresa ? 'emp' : 'pes', pagoPessoal: false, vencimento: hoje, parcelas: best.parcelas,
+      categoria: daEmpresa ? 'Fornecedores' : best.parcelas > 1 ? 'Compras parceladas' : 'Outros', metaModo: 'nova', metaId: '', prazo: '' };
     renderAprovar();
   }
   function lerFA() {
@@ -2876,7 +2960,12 @@ body.mapa-aberto main { padding-bottom: 0; }
     }).join('') + '</div></div>';
     h += '<label class="campo" style="margin-bottom:6px"><span>Para onde vai?</span></label><div class="seg"><button data-acao="faDest" data-v="fin" class="' + (f.destino === 'fin' ? 'ativo' : '') + '">💰 Despesa no Financeiro</button><button data-acao="faDest" data-v="meta" class="' + (f.destino === 'meta' ? 'ativo' : '') + '">🎯 Meta</button></div>';
     if (f.destino === 'fin') {
-      var cats = S.d ? S.d.categorias.filter(function (c) { return c.tipo === 'Despesa'; }) : [];
+      if (S.dEmp) {
+        h += '<div class="seg"><button data-acao="faLivro" data-v="pes" class="' + (f.livro === 'pes' ? 'ativo' : '') + '">👤 Pessoal</button><button data-acao="faLivro" data-v="emp" class="' + (f.livro === 'emp' ? 'ativo' : '') + '">🏢 ' + esc(S.dEmp.empresaNome || 'Empresa') + '</button></div>';
+        if (f.livro === 'emp') h += '<button class="toggle-linha" data-acao="faPagoPes" style="width:100%;text-align:left"><span><b>Vou pagar com meu dinheiro pessoal</b><small>A despesa fica na empresa e aparece também no seu Financeiro pessoal</small></span><span class="sw' + (f.pagoPessoal ? ' on' : '') + '"></span></button>';
+      }
+      var livroCats = f.livro === 'emp' && S.dEmp ? S.dEmp : S.dPes;
+      var cats = livroCats ? livroCats.categorias.filter(function (c) { return c.tipo === 'Despesa'; }) : [];
       if (!cats.some(function (c) { return c.nome === f.categoria; })) cats = cats.concat([{ nome: f.categoria }]);
       h += '<div class="duas"><label class="campo"><span>' + (f.parcelas > 1 ? '1º vencimento' : 'Vencimento') + '</span><input type="date" id="faVenc" value="' + esc(f.vencimento) + '"></label>' +
         '<label class="campo"><span>Parcelas</span><div class="stepper"><button data-acao="faParcStep" data-n="-1">−</button><input id="faParc" inputmode="numeric" value="' + f.parcelas + '"><button data-acao="faParcStep" data-n="1">+</button></div></label></div>';
@@ -2903,10 +2992,10 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (f.destino === 'fin' && !f.vencimento) return toast('Informe o vencimento', true);
     if (f.destino === 'meta' && f.metaModo === 'existente' && !f.metaId) return toast('Escolha a meta', true);
     var b = $('#faSalvar'); b.disabled = true; b.textContent = 'Aprovando…';
-    var dados = { id: f.id, cotacaoId: f.cotacaoId, destino: f.destino, fin: { vencimento: f.vencimento, parcelas: f.parcelas, categoria: f.categoria }, meta: { modo: f.metaModo, metaId: f.metaId, prazo: f.prazo } };
+    var dados = { id: f.id, cotacaoId: f.cotacaoId, destino: f.destino, fin: { vencimento: f.vencimento, parcelas: f.parcelas, categoria: f.categoria, livro: f.livro, pagoPessoal: f.pagoPessoal }, meta: { modo: f.metaModo, metaId: f.metaId, prazo: f.prazo } };
     mutar('compraAprovar', dados).then(function () {
       var id = f.id; FA = null;
-      if (dados.destino === 'fin') atualizarFinanceiroDepois(); else api('metas').then(function (d) { S.m = d; if (!$('#sheet').hidden) abrirCompra(id); }, function () {});
+      if (dados.destino === 'fin') { atualizarFinanceiroDepois(f.livro); if (f.livro === 'emp') atualizarFinanceiroDepois('pes'); } else api('metas').then(function (d) { S.m = d; if (!$('#sheet').hidden) abrirCompra(id); }, function () {});
       S.kview = 'Aprovado'; render(); abrirCompra(id); toast('Compra aprovada ✅');
     }, function () { b.disabled = false; b.textContent = 'Tentar de novo'; });
   }
@@ -3205,7 +3294,7 @@ body.mapa-aberto main { padding-bottom: 0; }
         el.disabled = true; el.textContent = 'Desfazendo…';
         var dest0 = (S.k.compras.find(function (o) { return o.id === id; }) || {}).destino;
         mutar('compraDesaprovar', { id: id }).then(function () {
-          if (dest0 === 'Financeiro') atualizarFinanceiroDepois(); else api('metas').then(function (d) { S.m = d; }, function () {});
+          if (dest0 === 'Financeiro') { atualizarFinanceiroDepois('pes'); if (S.dEmp) atualizarFinanceiroDepois('emp'); } else api('metas').then(function (d) { S.m = d; }, function () {});
           S.kview = 'Cotando'; render(); abrirCompra(id); toast('Aprovação desfeita');
         }, function () { el.disabled = false; el.textContent = 'Tentar de novo'; });
         break;
@@ -3239,6 +3328,8 @@ body.mapa-aberto main { padding-bottom: 0; }
       case 'faModo': lerFA(); FA.metaModo = el.getAttribute('data-v'); renderAprovar(); break;
       case 'faParcStep': lerFA(); FA.parcelas = Math.max(1, Math.min(48, FA.parcelas + (+el.getAttribute('data-n')))); renderAprovar(); break;
       case 'faSalvar': salvarFA(); break;
+      case 'faLivro': lerFA(); FA.livro = el.getAttribute('data-v'); FA.categoria = FA.livro === 'emp' ? 'Fornecedores' : (FA.parcelas > 1 ? 'Compras parceladas' : 'Outros'); renderAprovar(); break;
+      case 'faPagoPes': lerFA(); FA.pagoPessoal = !FA.pagoPessoal; renderAprovar(); break;
       // metas
       case 'mView': S.mview = id; store('cm_mview', id); render(); window.scrollTo(0, 0); break;
       case 'mPes': S.metPes = id; render(); break;
@@ -3277,6 +3368,21 @@ body.mapa-aberto main { padding-bottom: 0; }
       case 'mvLancar': lerFV(); FV.lancar = !FV.lancar; renderFormMov(); break;
       case 'mvSalvar': salvarFV(); break;
       case 'holerites': abrirHolerites(); break;
+      // financeiro empresa
+      case 'fPessoal': lerForm(); FORM.pessoal = el.getAttribute('data-v'); renderForm(); break;
+      case 'irEmpresa': var mesAlvo = id; fecharSheet(); trocarModulo('emp'); S.mes = mesAlvo; S.view = 'mes'; render(); break;
+      case 'empNome':
+        abrirSheet('<h2><span>Nome da empresa</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>' +
+          '<label class="campo"><span>Nome</span><input id="empNomeIn" maxlength="40" value="' + esc((S.d && S.d.empresaNome) || '') + '" autocomplete="off"></label>' +
+          '<p class="muted" style="font-size:13px;margin-top:-6px">Aparece nos lançamentos ligados ao seu Financeiro pessoal (ex.: “JTech: DAS MEI”). O nome do card no Início muda em Personalizar.</p>' +
+          '<div class="acoes"><button class="btn pri" data-acao="empNomeOk">' + ic('check') + 'Salvar</button></div>');
+        setTimeout(function () { var e = $('#empNomeIn'); if (e) e.focus(); }, 200);
+        break;
+      case 'empNomeOk':
+        var nn = ($('#empNomeIn').value || '').trim();
+        if (!nn) { toast('Informe o nome', true); break; }
+        mutar('empresaNome', { nome: nn, livro: 'emp' }).then(function () { fecharSheet(); recarregarLivro('pes'); toast('Nome atualizado'); }, function () {});
+        break;
       // início (cards)
       case 'homePers': FC = null; abrirPersonalizar(); break;
       case 'cardEditar': editarCard(id); break;
@@ -3491,8 +3597,8 @@ body.mapa-aberto main { padding-bottom: 0; }
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden' && mapaSujo) salvarMapaAgora(); // app foi para segundo plano: salva o mapa já
     if (document.visibilityState === 'visible' && S.token && S.d && S.pend === 0 && $('#sheet').hidden && !(S.modulo === 'map' && S.mapa)) {
-      var cm = CARGA_MOD[S.modulo];
-      api(cm[0]).then(function (d) { if (S.pend === 0) { S[cm[1]] = d; render(); } }, function () {});
+      if (S.modulo === 'fin' || S.modulo === 'emp') recarregarLivro(S.livro);
+      else { var cm = CARGA_MOD[S.modulo]; api(cm[0]).then(function (d) { if (S.pend === 0) { S[cm[1]] = d; render(); } }, function () {}); }
     }
   });
 
