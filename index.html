@@ -583,6 +583,79 @@ body.mapa-aberto main { padding-bottom: 0; }
 @keyframes brilho { to { background-position: -200% 0; } }
 .breve-box { text-align: center; padding: 60px 20px; color: var(--muted); }
 .breve-box svg { width: 44px; height: 44px; margin-bottom: 10px; }
+
+/* ---------- Linha do tempo (mesmo formato da "História da Amar") ---------- */
+body.mod-lin .bottom, body.mod-lin .fab { display: none; }
+body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+@media (min-width: 900px) { body.mod-lin main { max-width: 1280px; } }
+.lt-stage { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(10px, 2vw, 24px); margin-top: 8px; }
+.lt-seta { width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); display: grid; place-items: center; box-shadow: var(--shadow); transition: border-color .15s, color .15s, transform .15s, opacity .15s; }
+.lt-seta svg { width: 22px; height: 22px; stroke-width: 2.4; }
+.lt-seta:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: scale(1.06); }
+.lt-seta:disabled { opacity: .3; cursor: default; }
+.lt-quadro { position: relative; display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); height: clamp(380px, 60vh, 560px); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
+.lt-img { position: relative; background: var(--surface-2); overflow: hidden; border-right: 1px solid var(--border); }
+.lt-img .lt-fundo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(24px) saturate(1.1); opacity: .55; transform: scale(1.1); }
+.lt-img img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.lt-semfoto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 12.5px; }
+.lt-ano-grande { font: 800 clamp(56px, 8vw, 96px)/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--accent); letter-spacing: -.04em; opacity: .9; }
+.lt-carregando { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--text) 7%, transparent) 50%, transparent 70%) var(--surface-2); background-size: 220% 100%; animation: brilho 1.2s linear infinite; }
+.lt-txt { display: flex; flex-direction: column; gap: 14px; padding: clamp(22px, 3vw, 40px); min-height: 0; }
+.lt-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-right: 86px; }
+.lt-ano { font: 700 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lt-pos { font: 600 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
+.lt-titulo { margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 800; line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; }
+.lt-sub { margin: 0; font-size: clamp(15px, 1.3vw, 17px); color: var(--muted); line-height: 1.4; }
+.lt-sep { width: 48px; height: 3px; border-radius: 3px; background: var(--accent); flex: none; }
+.lt-texto { flex: 1 1 auto; min-height: 0; overflow-y: auto; font-size: 15px; line-height: 1.7; white-space: pre-line; padding-right: 4px; }
+.lt-editar { position: absolute; top: 14px; right: 14px; z-index: 2; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-weight: 600; font-size: 12.5px; box-shadow: var(--shadow); }
+.lt-editar svg { width: 14px; height: 14px; }
+.lt-editar:hover { color: var(--accent); border-color: var(--accent); }
+.lt-quadro.anim-prox .lt-img > *, .lt-quadro.anim-prox .lt-txt { animation: ltDir 340ms cubic-bezier(.2,.7,.2,1); }
+.lt-quadro.anim-ant .lt-img > *, .lt-quadro.anim-ant .lt-txt { animation: ltEsq 340ms cubic-bezier(.2,.7,.2,1); }
+.lt-quadro .lt-img .lt-fundo { animation: none !important; }
+@keyframes ltDir { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes ltEsq { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+/* linha com as bolinhas */
+.lt-linha { overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; padding: 0 8px 6px; scrollbar-width: none; }
+.lt-linha::-webkit-scrollbar { display: none; }
+.lt-linha-in { position: relative; display: flex; width: max-content; min-width: 100%; justify-content: center; }
+.lt-marco { position: relative; z-index: 1; flex: 0 0 auto; width: 84px; display: flex; flex-direction: column; align-items: center; color: var(--muted); }
+.lt-marco .haste { height: 30px; width: 2px; margin: 6px 0 8px; }
+.lt-marco.ativo .haste { background: repeating-linear-gradient(180deg, var(--accent) 0 6px, transparent 6px 12px); }
+.lt-fio { position: absolute; z-index: 0; height: 2px; pointer-events: none; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--muted) 75%, transparent) 0 3px, transparent 3px 8px); }
+.lt-marco .rot { font: 600 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height: 1.2; transition: color .15s; }
+.lt-marco .mes { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; height: 15px; line-height: 15px; opacity: .85; }
+.lt-marco .trilho { position: relative; height: 30px; width: 100%; display: grid; place-items: center; margin-top: 4px; }
+.lt-marco .bola { position: relative; z-index: 1; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); background: var(--bg); transition: all .18s; }
+.lt-marco:hover .bola { border-color: var(--accent); transform: scale(1.12); }
+.lt-marco:hover .rot { color: var(--text); }
+.lt-marco.ativo .rot { color: var(--accent); font-weight: 700; font-size: 15.5px; }
+.lt-marco.ativo .bola { width: 26px; height: 26px; background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 22%, var(--bg)); }
+.lt-marco.lido .bola { border-color: color-mix(in srgb, var(--accent) 55%, var(--muted)); }
+.lt-marco.novo .bola { display: grid; place-items: center; width: 26px; height: 26px; border-style: dashed; border-color: var(--accent); color: var(--accent); font: 700 16px/1 system-ui, sans-serif; }
+.lt-marco.novo .rot { color: var(--accent); font-size: 12.5px; font-family: inherit; }
+.lt-marco.novo:hover .bola { background: var(--accent-soft); }
+/* vazio */
+.lt-inicio { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 48px 20px; background: var(--surface); border: 1px dashed var(--border); border-radius: 20px; margin-top: 8px; }
+.lt-inicio-ic { font-size: 56px; line-height: 1; }
+.lt-inicio h2 { margin: 0; font-size: 22px; }
+.lt-inicio p { margin: 0; max-width: 46ch; line-height: 1.5; }
+.lt-inicio .btn { width: auto; padding: 0 22px; margin-top: 6px; }
+/* formulário */
+.lt-fprev { height: 170px; border-radius: 14px; margin-bottom: 10px; background: var(--surface-2) center / cover no-repeat; border: 1.5px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.lt-fprev svg { width: 28px; height: 28px; }
+.lt-f2 { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
+@media (max-width: 820px) {
+  .lt-stage { grid-template-columns: 1fr; position: relative; }
+  .lt-seta { position: absolute; top: 105px; z-index: 3; width: 42px; height: 42px; background: color-mix(in srgb, var(--surface) 88%, transparent); }
+  .lt-seta svg { width: 18px; height: 18px; }
+  .lt-seta.esq { left: 8px; } .lt-seta.dir { right: 8px; }
+  .lt-quadro { grid-template-columns: 1fr; grid-template-rows: 250px auto; height: auto; }
+  .lt-img { border-right: 0; border-bottom: 1px solid var(--border); }
+  .lt-texto { overflow: visible; }
+  .lt-topo { padding-right: 0; }
+}
 </style>
 
 </head>
@@ -689,6 +762,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+    timeline: '<path d="M2 15h20"/><circle cx="6" cy="15" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="18" cy="15" r="2"/><path d="M12 13V4M9 4h6"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
   function ic(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || '') + '</svg>'; }
@@ -738,7 +812,8 @@ body.mapa-aberto main { padding-bottom: 0; }
     { id: 'doc', nome: 'Documentos', ic: 'idcard' },
     { id: 'met', nome: 'Metas', ic: 'target' },
     { id: 'cmp', nome: 'Compras', ic: 'cart' },
-    { id: 'map', nome: 'Mapas mentais', ic: 'mind' }
+    { id: 'map', nome: 'Mapas mentais', ic: 'mind' },
+    { id: 'lin', nome: 'Linha do tempo', ic: 'timeline' }
   ];
 
   /* ================= servidor ================= */
@@ -837,7 +912,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   }
   /** Mutação em fila: aplica o estado do servidor só quando a fila esvazia (evita "piscar"). */
   function mutar(acao, dados, otimista, chave) {
-    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : /^(compra|cotacao)[A-Z]/.test(acao) ? 'k' : /^mapa[A-Z]/.test(acao) ? 'p' : /^(orc|cliente)[A-Z]/.test(acao) ? 'o' : 'd');
+    chave = chave || (acao.indexOf('tarefa') === 0 ? 't' : acao.indexOf('habito') === 0 ? 'h' : /^(doc|ir)[A-Z]/.test(acao) ? 'x' : /^meta[A-Z]/.test(acao) ? 'm' : /^(compra|cotacao)[A-Z]/.test(acao) ? 'k' : /^mapa[A-Z]/.test(acao) ? 'p' : /^(orc|cliente)[A-Z]/.test(acao) ? 'o' : /^marco[A-Z]/.test(acao) ? 'lt' : 'd');
     var desfazer = otimista ? otimista() : null;
     if (otimista) render();
     S.pend++;
@@ -929,7 +1004,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
     // Financeiro (pessoal e empresa) só carrega depois do PIN extra
-    var ordem = [S.modulo].concat(['home', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map'].filter(function (m) { return m !== S.modulo; }))
+    var ordem = [S.modulo].concat(['home', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin'].filter(function (m) { return m !== S.modulo; }))
       .filter(function (m) { return (m !== 'fin' && m !== 'emp') || finLiberado(); });
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
@@ -943,7 +1018,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     return api('carregar', { livro: livro }).then(function (d) { guardarLivro(livro, d); if (S.pend === 0 && (S.livro === livro || S.modulo === 'home' || S.modulo === 'orc')) render(); }, function () {});
   }
   function abrirLivro(livro) { S.livro = livro; S.d = livro === 'emp' ? S.dEmp : S.dPes; }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'dPes'], emp: ['carregar', 'dEmp'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'], orc: ['orcamentos', 'o'] };
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'dPes'], emp: ['carregar', 'dEmp'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'], orc: ['orcamentos', 'o'], lin: ['linha', 'lt'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     if (id === 'fin' || id === 'emp') {
@@ -972,6 +1047,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     $('#tituloTop').textContent = nomeModulo(atual);
     document.body.classList.toggle('mod-tar', S.modulo === 'tar');
     document.body.classList.toggle('mod-home', S.modulo === 'home');
+    document.body.classList.toggle('mod-lin', S.modulo === 'lin');
     document.body.classList.toggle('mapa-aberto', S.modulo === 'map' && !!S.mapa);
   }
   function trocarModulo(id) {
@@ -1016,6 +1092,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (S.modulo === 'cmp') { if (S.k) renderCmp(); return; }
     if (S.modulo === 'map') { if (S.p) renderMap(); return; }
     if (S.modulo === 'orc') { if (S.o) renderOrc(); return; }
+    if (S.modulo === 'lin') { if (S.lt) renderLin(); return; }
     // Financeiro: sem PIN (ou depois de 10 min parado) mostra a tela de desbloqueio e apaga os dados da memória
     if (!finLiberado()) { if (S.dPes || S.dEmp) { S.finOk = false; S.dPes = null; S.dEmp = null; S.d = null; } renderFinLock(); return; }
     if (!S.d) return;
@@ -2033,9 +2110,10 @@ body.mapa-aberto main { padding-bottom: 0; }
     doc: { nome: 'Documentos', descricao: 'Validades e Imposto de Renda', emoji: '🪪', cor: '#7c3aed' },
     met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' },
     cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' },
-    map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' }
+    map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' },
+    lin: { nome: 'Linha do tempo', descricao: 'Conquistas e projetos da vida profissional', emoji: '🏆', cor: '#b45309' }
   };
-  var PAINEIS_REAIS = ['fin', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map']; // empresa: dentro do card Financeiro
+  var PAINEIS_REAIS = ['fin', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin']; // empresa: dentro do card Financeiro
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -2117,6 +2195,11 @@ body.mapa-aberto main { padding-bottom: 0; }
         if (!S.p.mapas.length) return { txt: 'Crie seu primeiro mapa' };
         var nt = S.p.mapas.reduce(function (s, x) { return s + contarNos(x.dados) - 1; }, 0);
         return { txt: S.p.mapas.length + ' mapa(s) · ' + nt + ' tópico(s)' };
+      }
+      if (m === 'lin' && S.lt) {
+        var ML = S.lt.marcos;
+        if (!ML.length) return { txt: 'Registre sua primeira conquista' };
+        return { txt: ML.length + ' marco(s) · desde ' + ML[0].ano };
       }
       if (m === 'cmp' && S.k) {
         var cot = S.k.compras.filter(function (x) { return x.status === 'Cotando'; }), apr = S.k.compras.filter(function (x) { return x.status === 'Aprovado'; });
@@ -2254,6 +2337,165 @@ body.mapa-aberto main { padding-bottom: 0; }
       return function () { S.c.cards = JSON.parse(antes); };
     }, 'c').then(function () {}, function () {});
     abrirPersonalizar();
+  }
+
+  /* ================= LINHA DO TEMPO ================= */
+  // Galeria no formato da "História da Amar": quadro (foto + texto), setas e a linha com uma bolinha por marco.
+  var LT = { id: store('cm_lt_atual') || '', atual: -1, dir: 0, lidos: {} };
+  // Fotos ficam só na memória (podem ser grandes demais para o armazenamento do aparelho); baixa uma por vez.
+  var ltImg = {}, ltPedindo = {}, ltFila = [], ltBaixando = false;
+  function capMes(n) { return MESES[n - 1].charAt(0).toUpperCase() + MESES[n - 1].slice(1); }
+  function rotuloMarco(m) { return m.ano + (m.mes ? ' · ' + capMes(m.mes) : ''); }
+  function pedirImgMarco(id, prio) {
+    if (!id || ltImg[id] || ltPedindo[id]) return;
+    if (prio) ltFila.unshift(id); else if (ltFila.indexOf(id) < 0) ltFila.push(id);
+    baixarImgMarco();
+  }
+  function baixarImgMarco() {
+    if (ltBaixando || !ltFila.length) return;
+    var id = ltFila.shift();
+    if (ltImg[id] || ltPedindo[id]) { baixarImgMarco(); return; }
+    ltBaixando = true; ltPedindo[id] = 1;
+    api('marcoImagem', { id: id }).then(function (r) { ltImg[id] = 'data:' + r.mime + ';base64,' + r.base64; }, function () { ltImg[id] = 'erro'; }).then(function () {
+      ltBaixando = false; delete ltPedindo[id];
+      var m = S.lt && S.lt.marcos[LT.atual];
+      if (S.modulo === 'lin' && m && m.imagemId === id) pintarImgMarco(m);
+      baixarImgMarco();
+    });
+  }
+  function pintarImgMarco(m) {
+    var box = $('#ltImg'); if (!box) return;
+    var url = m.imagemId ? ltImg[m.imagemId] : null;
+    if (m.imagemId && !url) { box.innerHTML = '<div class="lt-carregando"></div>'; return; }
+    if (!m.imagemId || url === 'erro') {
+      box.innerHTML = '<div class="lt-semfoto"><span class="lt-ano-grande">' + esc(m.ano) + '</span>' + (url === 'erro' ? '<small>Não foi possível carregar a foto.</small>' : '') + '</div>';
+      return;
+    }
+    box.innerHTML = '<div class="lt-fundo" style="background-image:url(\'' + url + '\')"></div><img alt="' + esc(m.titulo) + '" src="' + url + '">';
+  }
+
+  function renderLin() {
+    $('#bottomNav').innerHTML = ''; $('#subnav').hidden = true;
+    var M = S.lt.marcos;
+    if (!M.length) {
+      LT.atual = -1;
+      $('#view').innerHTML = '<div class="lt-inicio"><div class="lt-inicio-ic">🏆</div><h2>Sua linha do tempo começa aqui</h2>' +
+        '<p class="muted">Registre conquistas e projetos da sua vida profissional: o ano, uma foto e o que aconteceu. Eles ficam em ordem cronológica, do primeiro ao mais recente.</p>' +
+        '<button class="btn pri" data-acao="ltNovo">' + ic('plus') + 'Adicionar o primeiro marco</button></div>';
+      return;
+    }
+    var k = -1;
+    for (var i = 0; i < M.length; i++) if (M[i].id === LT.id) { k = i; break; }
+    if (k < 0) k = LT.atual >= 0 ? Math.min(LT.atual, M.length - 1) : 0; // marco excluído: fica no vizinho
+    LT.atual = k; LT.id = M[k].id; LT.lidos[LT.id] = true;
+    var m = M[k], dir = LT.dir; LT.dir = 0;
+    var h = '<div class="lt-stage">' +
+      '<button class="lt-seta esq" data-acao="ltAnt" aria-label="Marco anterior" title="Anterior (←)"' + (k === 0 ? ' disabled' : '') + '>' + ic('left') + '</button>' +
+      '<article class="lt-quadro' + (dir ? (dir > 0 ? ' anim-prox' : ' anim-ant') : '') + '" id="ltQuadro">' +
+        '<div class="lt-img" id="ltImg"></div>' +
+        '<div class="lt-txt"><div class="lt-topo"><span class="lt-ano">' + esc(rotuloMarco(m)) + '</span><span class="lt-pos">' + (k + 1) + ' de ' + M.length + '</span></div>' +
+          '<h2 class="lt-titulo">' + esc(m.titulo) + '</h2>' + (m.subtitulo ? '<p class="lt-sub">' + esc(m.subtitulo) + '</p>' : '') +
+          '<span class="lt-sep"></span><div class="lt-texto">' + esc(m.texto) + '</div></div>' +
+        '<button class="lt-editar" data-acao="ltEditar" data-id="' + m.id + '" title="Editar este marco">' + ic('edit') + 'Editar</button>' +
+      '</article>' +
+      '<button class="lt-seta dir" data-acao="ltProx" aria-label="Próximo marco" title="Próximo (→)"' + (k === M.length - 1 ? ' disabled' : '') + '>' + ic('right') + '</button></div>';
+    h += '<nav class="lt-linha" id="ltLinha" aria-label="Linha do tempo"><div class="lt-linha-in" id="ltLinhaIn"><span class="lt-fio" id="ltFio"></span>' +
+      M.map(function (x, i) {
+        return '<button class="lt-marco' + (i === k ? ' ativo' : LT.lidos[x.id] ? ' lido' : '') + '" data-acao="ltIr" data-id="' + i + '" title="' + esc(x.titulo) + '"' + (i === k ? ' aria-current="step"' : '') + '>' +
+          '<span class="haste"></span><span class="rot">' + esc(x.ano) + '</span><span class="mes">' + (x.mes ? MCURTO[x.mes - 1] : '') + '</span><span class="trilho"><span class="bola"></span></span></button>';
+      }).join('') +
+      '<button class="lt-marco novo" data-acao="ltNovo" title="Adicionar um novo marco"><span class="haste"></span><span class="rot">Novo</span><span class="mes"></span><span class="trilho"><span class="bola">+</span></span></button>' +
+      '</div></nav>';
+    $('#view').innerHTML = h;
+    pintarImgMarco(m);
+    posicionarFioLt();
+    var at = $('#ltLinhaIn .lt-marco.ativo'), ln = $('#ltLinha');
+    if (at && ln) ln.scrollLeft = Math.max(0, at.offsetLeft + at.offsetWidth / 2 - ln.clientWidth / 2);
+    // foto atual primeiro, depois as vizinhas, depois o resto em segundo plano
+    [k, k + 1, k - 1, k + 2, k - 2].forEach(function (i, n) { if (M[i] && M[i].imagemId) pedirImgMarco(M[i].imagemId, n === 0); });
+    M.forEach(function (x) { if (x.imagemId) pedirImgMarco(x.imagemId, false); });
+  }
+  // uma linha tracejada contínua do centro da primeira bolinha ao centro da última
+  function posicionarFioLt() {
+    var fio = $('#ltFio'), inn = $('#ltLinhaIn'); if (!fio || !inn) return;
+    var bolas = inn.querySelectorAll('.bola');
+    if (bolas.length < 2) { fio.hidden = true; return; }
+    var base = inn.getBoundingClientRect(), a = bolas[0].getBoundingClientRect(), b = bolas[bolas.length - 1].getBoundingClientRect();
+    fio.hidden = false;
+    fio.style.left = (a.left + a.width / 2 - base.left) + 'px';
+    fio.style.width = Math.max(0, b.left - a.left + (b.width - a.width) / 2) + 'px';
+    fio.style.top = (a.top + a.height / 2 - base.top - 1) + 'px';
+  }
+  function irMarco(i, animar) {
+    var M = S.lt && S.lt.marcos; if (!M || !M.length) return;
+    i = Math.max(0, Math.min(M.length - 1, i));
+    if (i === LT.atual) return;
+    LT.dir = animar && LT.atual >= 0 ? (i > LT.atual ? 1 : -1) : 0;
+    LT.atual = i; LT.id = M[i].id; store('cm_lt_atual', LT.id);
+    renderLin();
+  }
+
+  /* ----- formulário ----- */
+  var FL = null;
+  function formMarco(id) {
+    var x = id ? S.lt.marcos.find(function (o) { return o.id === id; }) : null;
+    var img = x && x.imagemId && ltImg[x.imagemId] !== 'erro' ? ltImg[x.imagemId] || '' : '';
+    FL = x ? { id: x.id, ano: x.ano, mes: x.mes, titulo: x.titulo, subtitulo: x.subtitulo, texto: x.texto, imagem: null, preview: img, tinhaFoto: !!x.imagemId, remover: false }
+      : { id: '', ano: new Date().getFullYear(), mes: 0, titulo: '', subtitulo: '', texto: '', imagem: null, preview: '', tinhaFoto: false, remover: false };
+    renderFormMarco();
+  }
+  function renderFormMarco() {
+    var f = FL, temFoto = !!(f.preview || (f.tinhaFoto && !f.remover));
+    var h = '<h2><span>' + (f.id ? 'Editar marco' : 'Novo marco') + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>';
+    h += '<div class="lt-fprev"' + (f.preview ? ' style="background-image:url(\'' + f.preview + '\')"' : '') + '>' + (f.preview ? '' : temFoto ? '<span>Foto atual</span>' : ic('image') + '<span>Sem foto</span>') + '</div>';
+    h += '<div class="acoes g2" style="margin-bottom:14px"><label class="btn sec" style="cursor:pointer">' + ic('image') + (temFoto ? 'Trocar foto' : 'Escolher foto') + '<input type="file" accept="image/*" hidden id="ltFoto"></label>' +
+      (temFoto ? '<button class="btn perigo" data-acao="ltSemFoto">' + ic('trash') + 'Remover foto</button>' : '<span></span>') + '</div>';
+    h += '<div class="lt-f2"><label class="campo"><span>Ano</span><input id="flAno" type="number" inputmode="numeric" min="1950" max="2100" value="' + esc(f.ano) + '"></label>' +
+      '<label class="campo"><span>Mês (opcional)</span><select id="flMes"><option value="0">Sem mês</option>' +
+      MESES.map(function (n, i) { return '<option value="' + (i + 1) + '"' + (+f.mes === i + 1 ? ' selected' : '') + '>' + capMes(i + 1) + '</option>'; }).join('') + '</select></label></div>';
+    h += '<label class="campo"><span>Título</span><input id="flTit" maxlength="120" value="' + esc(f.titulo) + '" placeholder="Ex.: Promovido a supervisor, Abri a JTech" autocomplete="off"></label>';
+    h += '<label class="campo"><span>Subtítulo (opcional)</span><input id="flSub" maxlength="200" value="' + esc(f.subtitulo) + '" placeholder="Ex.: Empresa, cidade ou uma frase curta" autocomplete="off"></label>';
+    h += '<label class="campo"><span>O que aconteceu (opcional)</span><textarea id="flTexto" maxlength="6000" rows="6" placeholder="Conte a história desse marco: o desafio, o que você fez, o resultado…">' + esc(f.texto) + '</textarea></label>';
+    h += '<p class="muted" style="font-size:12.5px;margin:-4px 0 14px">O mês só define a ordem entre marcos do mesmo ano.</p>';
+    h += '<div class="acoes"><button class="btn pri" data-acao="ltSalvar" id="flSalvar">' + ic('check') + (f.id ? 'Salvar' : 'Adicionar marco') + '</button>' +
+      (f.id ? '<button class="btn perigo" data-acao="ltExcluir" data-id="' + f.id + '">' + ic('trash') + 'Excluir marco</button>' : '') + '</div>';
+    abrirSheet(h);
+  }
+  function lerFL() {
+    if (!FL || !$('#flTit')) return;
+    FL.ano = $('#flAno').value; FL.mes = +$('#flMes').value || 0;
+    FL.titulo = $('#flTit').value; FL.subtitulo = $('#flSub').value; FL.texto = $('#flTexto').value;
+  }
+  function fotoMarco(file) {
+    if (!file || file.type.indexOf('image/') !== 0) return toast('Escolha uma imagem', true);
+    lerFL();
+    // Foto do marco: até 1400px no lado maior, JPEG 0,82 (~150–300 KB)
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var k = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+      var cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      var dataUrl = cv.toDataURL('image/jpeg', 0.82);
+      FL.imagem = { mime: 'image/jpeg', base64: dataUrl.split(',')[1] }; FL.preview = dataUrl; FL.remover = false;
+      renderFormMarco();
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); toast('Não foi possível abrir essa imagem', true); };
+    img.src = url;
+  }
+  function salvarFL() {
+    lerFL();
+    var f = FL, ano = parseInt(f.ano, 10);
+    if (!ano || ano < 1950 || ano > 2100) return toast('Informe um ano válido', true);
+    if (!f.titulo.trim()) return toast('Informe o título', true);
+    var b = $('#flSalvar'); b.disabled = true; b.textContent = f.imagem ? 'Enviando foto…' : 'Salvando…';
+    var previa = f.preview;
+    mutar('marcoSalvar', { id: f.id, ano: ano, mes: f.mes, titulo: f.titulo, subtitulo: f.subtitulo, texto: f.texto, imagem: f.imagem, removerImagem: f.remover }).then(function (d) {
+      var m = d.marcos.find(function (o) { return o.id === d.salvo; });
+      if (m && m.imagemId && f.imagem) ltImg[m.imagemId] = previa; // a foto nova já está aqui: não baixa de volta
+      LT.id = d.salvo; LT.dir = 0; store('cm_lt_atual', d.salvo);
+      fecharSheet(); FL = null; render(); toast(f.id ? 'Marco atualizado' : 'Marco adicionado 🏆');
+    }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
   }
 
   /* ================= METAS ================= */
@@ -3628,6 +3870,23 @@ body.mapa-aberto main { padding-bottom: 0; }
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // linha do tempo
+      case 'ltIr': irMarco(+id, true); break;
+      case 'ltAnt': irMarco(LT.atual - 1, true); break;
+      case 'ltProx': irMarco(LT.atual + 1, true); break;
+      case 'ltNovo': formMarco(null); break;
+      case 'ltEditar': formMarco(id); break;
+      case 'ltSemFoto': lerFL(); FL.imagem = null; FL.preview = ''; FL.remover = true; renderFormMarco(); break;
+      case 'ltSalvar': salvarFL(); break;
+      case 'ltExcluir':
+        var mx0 = S.lt.marcos.find(function (o) { return o.id === id; });
+        abrirSheet('<h2><span>Excluir marco?</span></h2><p class="muted" style="margin-top:-6px">' + esc(rotuloMarco(mx0) + ' — ' + mx0.titulo) + (mx0.imagemId ? '. A foto vai para a lixeira do Drive (dá para recuperar por 30 dias).' : '') + '</p><div class="acoes">' +
+          '<button class="btn perigo" data-acao="ltExcluirOk" data-id="' + id + '">' + ic('trash') + 'Excluir</button><button class="btn sec" data-acao="ltEditar" data-id="' + id + '">Cancelar</button></div>');
+        break;
+      case 'ltExcluirOk':
+        el.disabled = true; el.textContent = 'Excluindo…';
+        mutar('marcoExcluir', { id: id }).then(function () { fecharSheet(); toast('Marco excluído'); }, function () {});
+        break;
       // mapas mentais
       case 'mapAbrir': S.mapa = id; S.noSel = null; MZ.ajustar = true; MSTATUS = ''; render(); break;
       case 'mapFechar': salvarMapaAgora(); S.mapa = null; S.noSel = null; render(); window.scrollTo(0, 0); break;
@@ -3970,6 +4229,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     else if (S.modulo === 'cmp') { if (S.k) formCompra(); }
     else if (S.modulo === 'map') { if (S.p && !S.mapa) formMapa(); }
     else if (S.modulo === 'orc') { if (S.o) { if (S.oview === 'clientes') formCliente(); else formOrc(); } }
+    else if (S.modulo === 'lin') { if (S.lt) formMarco(null); }
     else if (S.d) novoForm();
   });
 
@@ -4013,6 +4273,7 @@ body.mapa-aberto main { padding-bottom: 0; }
     var t = ev.target;
     if (t.hasAttribute && t.hasAttribute('data-anexar')) { anexar(t.getAttribute('data-anexar'), t.files[0]); t.value = ''; }
     if (t.id === 'cardFoto') { fotoCard(t.files[0]); t.value = ''; }
+    if (t.id === 'ltFoto') { fotoMarco(t.files[0]); t.value = ''; }
     if ((t.id === 'faVenc' || t.id === 'faParc') && FA) { lerFA(); renderAprovar(); } // atualiza a prévia das parcelas
     if ((t.id === 'faoD1' || t.id === 'faoD2') && FAO) { lerFAO(); renderAprovarOrc(); }
     if (t.id === 'foParc' && FO) { lerFO(); atualizarTotaisFO(); }
@@ -4028,6 +4289,9 @@ body.mapa-aberto main { padding-bottom: 0; }
       return;
     }
     if (ev.key === 'Escape' && !$('#sheet').hidden) fecharSheet();
+    if (S.modulo === 'lin' && $('#sheet').hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
+      ev.preventDefault(); irMarco(LT.atual + (ev.key === 'ArrowRight' ? 1 : -1), true); return;
+    }
     if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') {
       var t = ev.target;
       if (t.hasAttribute('data-addg')) { ev.preventDefault(); addItem(t.getAttribute('data-id'), +t.getAttribute('data-addg')); }
@@ -4051,6 +4315,14 @@ body.mapa-aberto main { padding-bottom: 0; }
     if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) { S.mes = somarMes(S.mes, dx < 0 ? 1 : -1); render(); }
     tx = null;
   }, { passive: true });
+  // Linha do tempo: arrastar o quadro para os lados troca de marco.
+  $('#view').addEventListener('touchend', function (e) {
+    if (tx === null || S.modulo !== 'lin' || !e.target.closest('#ltQuadro')) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) irMarco(LT.atual + (dx < 0 ? 1 : -1), true);
+    tx = null;
+  }, { passive: true });
+  window.addEventListener('resize', function () { if (S.modulo === 'lin') posicionarFioLt(); });
 
   // Recarrega dados ao voltar para o app (ex.: depois de horas em segundo plano).
   document.addEventListener('visibilitychange', function () {
