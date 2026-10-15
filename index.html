@@ -86,6 +86,7 @@ svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width:
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 .top .titulo { flex: 1; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+.com-icone { background: #082718 url('https://jtechmanager.github.io/central-marques/icone-logo.png') center / cover no-repeat; }
 .mini-logo { width: 32px; height: 32px; border-radius: 10px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-weight: 800; font-size: 15px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--muted); }
 .icon-btn:active { background: var(--surface-2); }
@@ -591,7 +592,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   <!-- PIN -->
   <section id="pin">
     <div class="pin-brand">
-      <div class="logo">CM</div>
+      <div class="logo com-icone"></div>
       <h1>Central Marques</h1>
       <p>Digite seu PIN</p>
     </div>
@@ -603,7 +604,7 @@ body.mapa-aberto main { padding-bottom: 0; }
   <!-- CENTRAL -->
   <div id="app" hidden>
     <aside class="side">
-      <div class="marca"><div class="mini-logo">CM</div> Central Marques</div>
+      <div class="marca"><div class="mini-logo com-icone"></div> Central Marques</div>
       <div class="rotulo">Painéis</div>
       <div id="modsSide"></div>
       <div class="fim">
@@ -614,7 +615,7 @@ body.mapa-aberto main { padding-bottom: 0; }
 
     <header class="top">
       <button class="icon-btn" data-acao="modulos" title="Painéis"></button>
-      <div class="titulo"><div class="mini-logo">CM</div><span id="tituloTop">Financeiro</span></div>
+      <div class="titulo"><div class="mini-logo com-icone"></div><span id="tituloTop">Financeiro</span></div>
       <button class="icon-btn" data-acao="tema" title="Tema"></button>
       <button class="icon-btn" data-acao="sair" title="Bloquear"></button>
     </header>
