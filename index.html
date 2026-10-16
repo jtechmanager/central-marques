@@ -584,6 +584,61 @@ body.mapa-aberto main { padding-bottom: 0; }
 .breve-box { text-align: center; padding: 60px 20px; color: var(--muted); }
 .breve-box svg { width: 44px; height: 44px; margin-bottom: 10px; }
 
+/* ---------- Ecossistema (mapa de conexões) ---------- */
+:root { --eco-entre: #d97706; --eco-drive: #16a34a; --eco-email: #e11d48; --eco-acesso: #2563eb; --eco-servidor: #7c3aed; --eco-propria: #94a3b8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --eco-entre: #fbbf24; --eco-drive: #4ade80; --eco-email: #fb7185; --eco-acesso: #6ea0ff; --eco-servidor: #a78bfa; --eco-propria: #64748b; } }
+:root[data-theme="dark"] { --eco-entre: #fbbf24; --eco-drive: #4ade80; --eco-email: #fb7185; --eco-acesso: #6ea0ff; --eco-servidor: #a78bfa; --eco-propria: #64748b; }
+body.mod-eco .fab { display: none; }
+@media (min-width: 900px) { body.mod-eco main { max-width: 1440px; } }
+.eco-chips { flex-wrap: wrap; overflow: visible; }
+.eco-chips .chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; font-size: 14px; }
+.eco-chips .chip:not(.ativo) { opacity: .6; }
+.eco-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.eco-dot.c-entre { background: var(--eco-entre); } .eco-dot.c-drive { background: var(--eco-drive); } .eco-dot.c-email { background: var(--eco-email); }
+.eco-dot.c-acesso { background: var(--eco-acesso); } .eco-dot.c-servidor { background: var(--eco-servidor); } .eco-dot.c-propria { background: var(--eco-propria); }
+.eco-wrap { position: relative; }
+.eco-area { overflow: auto; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); height: calc(100dvh - 300px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); min-height: 340px;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 20%, transparent) 1px, transparent 1px); background-size: 22px 22px; }
+@media (min-width: 900px) { .eco-area { height: calc(100vh - 250px); } }
+.eco-zoom { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.eco-zoom button { width: 40px; height: 40px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--text); border: 1px solid var(--border); }
+.eco-dica { font-size: 12.5px; text-align: center; margin: 10px 8px 0; }
+/* o estilo global de ícones (svg { stroke }) não pode vazar no desenho */
+.eco-svg { display: block; stroke: none; }
+.eco-svg text { stroke: none; font-family: inherit; }
+.eco-fundo { fill: transparent; }
+.eco-zona { fill: color-mix(in srgb, var(--text) 3%, transparent); stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.eco-zt { fill: var(--text); font-size: 14px; font-weight: 800; }
+.eco-zs { fill: var(--muted); font-weight: 500; font-size: 12.5px; }
+.eco-e { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: opacity .15s; }
+.eco-e.c-entre { stroke: var(--eco-entre); stroke-width: 3.2; } .eco-e.c-drive { stroke: var(--eco-drive); } .eco-e.c-email { stroke: var(--eco-email); stroke-dasharray: 8 6; }
+.eco-e.c-acesso { stroke: var(--eco-acesso); } .eco-e.c-servidor { stroke: var(--eco-servidor); } .eco-e.c-propria { stroke: var(--eco-propria); stroke-dasharray: 3 5; }
+.eco-ah.c-entre { fill: var(--eco-entre); } .eco-ah.c-drive { fill: var(--eco-drive); } .eco-ah.c-email { fill: var(--eco-email); }
+.eco-ah.c-acesso { fill: var(--eco-acesso); } .eco-ah.c-servidor { fill: var(--eco-servidor); } .eco-ah.c-propria { fill: var(--eco-propria); }
+.eco-e.dim { opacity: .1; } .eco-e.on { stroke-width: 4; }
+.eco-no { cursor: pointer; transition: opacity .15s; }
+.eco-no rect { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.eco-no .eco-nl { fill: var(--text); font-size: 14px; font-weight: 700; text-anchor: middle; }
+.eco-no .eco-ns { fill: var(--muted); font-size: 11.5px; text-anchor: middle; }
+.eco-no.k-ext rect { fill: color-mix(in srgb, var(--eco-acesso) 10%, var(--surface)); stroke: color-mix(in srgb, var(--eco-acesso) 55%, transparent); }
+.eco-no.k-srv rect { fill: color-mix(in srgb, var(--eco-servidor) 12%, var(--surface)); stroke: color-mix(in srgb, var(--eco-servidor) 55%, transparent); }
+.eco-no.k-painel rect { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.eco-no.k-aba rect { fill: color-mix(in srgb, var(--eco-drive) 9%, var(--surface)); stroke: color-mix(in srgb, var(--eco-drive) 45%, transparent); }
+.eco-no.k-pasta rect { fill: color-mix(in srgb, var(--eco-entre) 12%, var(--surface)); stroke: color-mix(in srgb, var(--eco-entre) 55%, transparent); }
+.eco-no:hover rect { stroke-width: 2.6; }
+.eco-no.dim { opacity: .25; }
+.eco-no.sel rect { stroke: var(--text); stroke-width: 3; }
+/* detalhes e lista */
+.eco-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -6px 0 10px; }
+.eco-fl { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.eco-fl:last-child { border-bottom: 0; }
+.eco-fl-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14.5px; }
+.eco-link { font-weight: 700; color: var(--text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); text-underline-offset: 3px; }
+.eco-onde { font-size: 12.5px; color: var(--muted); margin-top: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.eco-fl p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
+.eco-lista { padding: 2px 14px; margin-bottom: 6px; }
+.secao .eco-dot { vertical-align: 0; margin-right: 4px; }
+
 /* ---------- Linha do tempo (mesmo formato da "História da Amar") ---------- */
 body.mod-lin .bottom, body.mod-lin .fab { display: none; }
 body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
@@ -779,6 +834,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
     image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+    net: '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.2 5.4M12 11.5l5.2 5.4M7.5 19h9"/>',
     timeline: '<path d="M2 15h20"/><circle cx="6" cy="15" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="18" cy="15" r="2"/><path d="M12 13V4M9 4h6"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'
   };
@@ -830,7 +886,8 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     { id: 'met', nome: 'Metas', ic: 'target' },
     { id: 'cmp', nome: 'Compras', ic: 'cart' },
     { id: 'map', nome: 'Mapas mentais', ic: 'mind' },
-    { id: 'lin', nome: 'Linha do tempo', ic: 'timeline' }
+    { id: 'lin', nome: 'Linha do tempo', ic: 'timeline' },
+    { id: 'eco', nome: 'Ecossistema', ic: 'net' }
   ];
 
   /* ================= servidor ================= */
@@ -1021,7 +1078,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     var falhou = function (e) { if (e.message !== 'sessao') { $('#view').innerHTML = '<div class="vazio-box"><b>Não foi possível carregar</b>' + esc(e.message) + '<br><br><button class="btn sec" data-acao="recarregar">Tentar de novo</button></div>'; } };
     // Carrega o módulo aberto primeiro; os outros vêm em seguida, em segundo plano.
     // Financeiro (pessoal e empresa) só carrega depois do PIN extra
-    var ordem = [S.modulo].concat(['home', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin'].filter(function (m) { return m !== S.modulo; }))
+    var ordem = [S.modulo].concat(['home', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin', 'eco'].filter(function (m) { return m !== S.modulo; }))
       .filter(function (m) { return (m !== 'fin' && m !== 'emp') || finLiberado(); });
     ordem.reduce(function (p, m) { return p.then(function () { return carregarModulo(m); }); }, Promise.resolve()).catch(falhou);
   }
@@ -1035,7 +1092,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     return api('carregar', { livro: livro }).then(function (d) { guardarLivro(livro, d); if (S.pend === 0 && (S.livro === livro || S.modulo === 'home' || S.modulo === 'orc')) render(); }, function () {});
   }
   function abrirLivro(livro) { S.livro = livro; S.d = livro === 'emp' ? S.dEmp : S.dPes; }
-  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'dPes'], emp: ['carregar', 'dEmp'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'], orc: ['orcamentos', 'o'], lin: ['linha', 'lt'] };
+  var CARGA_MOD = { home: ['cards', 'c'], fin: ['carregar', 'dPes'], emp: ['carregar', 'dEmp'], tar: ['tarefas', 't'], hab: ['habitos', 'h'], doc: ['docs', 'x'], met: ['metas', 'm'], cmp: ['compras', 'k'], map: ['mapas', 'p'], orc: ['orcamentos', 'o'], lin: ['linha', 'lt'], eco: ['ecossistema', 'eco'] };
   function carregarModulo(id) {
     var c = CARGA_MOD[id];
     if (id === 'fin' || id === 'emp') {
@@ -1065,6 +1122,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     document.body.classList.toggle('mod-tar', S.modulo === 'tar');
     document.body.classList.toggle('mod-home', S.modulo === 'home');
     document.body.classList.toggle('mod-lin', S.modulo === 'lin');
+    document.body.classList.toggle('mod-eco', S.modulo === 'eco');
     document.body.classList.toggle('mapa-aberto', S.modulo === 'map' && !!S.mapa);
   }
   function trocarModulo(id) {
@@ -1110,6 +1168,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (S.modulo === 'map') { if (S.p) renderMap(); return; }
     if (S.modulo === 'orc') { if (S.o) renderOrc(); return; }
     if (S.modulo === 'lin') { if (S.lt) renderLin(); return; }
+    if (S.modulo === 'eco') { if (S.eco) renderEco(); return; }
     // Financeiro: sem PIN (ou depois de 10 min parado) mostra a tela de desbloqueio e apaga os dados da memória
     if (!finLiberado()) { if (S.dPes || S.dEmp) { S.finOk = false; S.dPes = null; S.dEmp = null; S.d = null; } renderFinLock(); return; }
     if (!S.d) return;
@@ -2128,9 +2187,10 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     met: { nome: 'Metas', descricao: 'Objetivos, reservas e quanto já guardou', emoji: '🎯', cor: '#db2777' },
     cmp: { nome: 'Compras', descricao: 'Cotações, aprovações e o que já foi comprado', emoji: '🛒', cor: '#0891b2' },
     map: { nome: 'Mapas mentais', descricao: 'Ideias e planejamentos em tópicos', emoji: '🧠', cor: '#4f46e5' },
-    lin: { nome: 'Linha do tempo', descricao: 'Conquistas e projetos da vida profissional', emoji: '🏆', cor: '#b45309' }
+    lin: { nome: 'Linha do tempo', descricao: 'Conquistas e projetos da vida profissional', emoji: '🏆', cor: '#b45309' },
+    eco: { nome: 'Ecossistema', descricao: 'Como painéis, planilha e Drive se conectam', emoji: '🕸️', cor: '#0f766e' }
   };
-  var PAINEIS_REAIS = ['fin', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin']; // empresa: dentro do card Financeiro
+  var PAINEIS_REAIS = ['fin', 'orc', 'tar', 'hab', 'doc', 'met', 'cmp', 'map', 'lin', 'eco']; // empresa: dentro do card Financeiro
   var PADRAO_CUSTOM = { nome: '', descricao: '', emoji: '🧩', cor: '#0f766e' };
   function ehCustom(m) { return /^c_/.test(m); }
   function paineisTodos() {
@@ -2213,6 +2273,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
         var nt = S.p.mapas.reduce(function (s, x) { return s + contarNos(x.dados) - 1; }, 0);
         return { txt: S.p.mapas.length + ' mapa(s) · ' + nt + ' tópico(s)' };
       }
+      if (m === 'eco' && S.eco) return { txt: S.eco.nos.length + ' peças · ' + paresEco().length + ' conexões' };
       if (m === 'lin' && S.lt) {
         var ML = S.lt.marcos;
         if (!ML.length) return { txt: 'Registre sua primeira conquista' };
@@ -2354,6 +2415,169 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       return function () { S.c.cards = JSON.parse(antes); };
     }, 'c').then(function () {}, function () {});
     abrirPersonalizar();
+  }
+
+  /* ================= ECOSSISTEMA ================= */
+  // Mapa somente leitura de como a Central se conecta (dados no servidor: Ecossistema.js).
+  var ECO_CATS = [
+    { id: 'entre', nome: 'Entre painéis', desc: 'Um painel grava ou lê nos dados de outro.' },
+    { id: 'drive', nome: 'Google Drive', desc: 'Arquivos e imagens enviados às pastas.' },
+    { id: 'email', nome: 'E-mail', desc: 'Avisos que chegam no Gmail.' },
+    { id: 'acesso', nome: 'Acesso e publicação', desc: 'Como o app abre e como cada versão é publicada.' },
+    { id: 'servidor', nome: 'Servidor', desc: 'Segurança, configurações e rotinas automáticas.' },
+    { id: 'propria', nome: 'Abas do próprio painel', desc: 'Cada painel lê e grava nas suas abas.' }
+  ];
+  var ECO_KINDS = { ext: 'Acesso e serviços', srv: 'Servidor', painel: 'Painel', aba: 'Aba da planilha', pasta: 'Pasta do Drive' };
+  var ECO = { zoom: 0, sel: null, view: store('cm_ecoview') || 'mapa', cats: { entre: 1, drive: 1, email: 1, acesso: 1, servidor: 1, propria: 0 } };
+  var ECO_H = 54, ECO_PRIO = ['entre', 'email', 'drive', 'servidor', 'acesso', 'propria'];
+  function noEco(id) { return S.eco.nos.find(function (n) { return n.id === id; }); }
+  function nomeCatEco(c) { return ECO_CATS.find(function (x) { return x.id === c; }).nome; }
+  // uma ligação por par de peças (pode ter fluxos nos dois sentidos)
+  function paresEco(lista) {
+    var mapa = {}, out = [];
+    (lista || S.eco.fluxos).forEach(function (f) {
+      var k = [f.from, f.to].sort().join('|');
+      if (!mapa[k]) { mapa[k] = { from: f.from, to: f.to, fl: [] }; out.push(mapa[k]); }
+      mapa[k].fl.push(f);
+    });
+    return out;
+  }
+  // Rotas em "trilhos": as linhas andam pelos corredores entre as colunas, com cantos arredondados.
+  var ECO_G = { srvEsq: 45, srv: 425, panEsq: 478, pan: 868, faixaTopo: 150, faixaDrive: 962 };
+  function colEco(n) { return n.k === 'ext' ? 'ext' : n.k === 'srv' ? 'srv' : n.k === 'painel' ? 'pan' : n.k === 'aba' ? 'tab' : 'pas'; }
+  function trilhoEco(A, B, lane) {
+    var ca = colEco(A), cb = colEco(B), o = ((lane % 5) - 2) * 9, h = ECO_H / 2;
+    var L = function (n) { return n.x - n.w / 2; }, R = function (n) { return n.x + n.w / 2; };
+    var vaoAcima = function (y) { return y - 35; }; // vão entre duas linhas de painéis
+    if (ca === 'ext' && cb === 'ext') { var yb = 126 + o / 3; return [[A.x, A.y + h], [A.x, yb], [B.x, yb], [B.x, B.y + h]]; }
+    if (ca === 'srv' && cb === 'srv') {
+      if (Math.abs(A.y - B.y) <= 150) return [[A.x + o, A.y + (B.y > A.y ? h : -h)], [A.x + o, B.y + (B.y > A.y ? -h : h)]];
+      var xg = ECO_G.srvEsq + o; return [[L(A), A.y], [xg, A.y], [xg, B.y], [L(B), B.y]];
+    }
+    if (ca === 'ext' || cb === 'ext') {
+      var E = ca === 'ext' ? A : B, X = ca === 'ext' ? B : A, yf = ECO_G.faixaTopo + o, p;
+      if (colEco(X) === 'srv') {
+        p = E.x < ECO_G.srv ? [[E.x, E.y + h], [E.x, yf], [X.x + o * 1.5, yf], [X.x + o * 1.5, X.y - h]]
+          : [[E.x, E.y + h], [E.x, yf], [ECO_G.srv + o, yf], [ECO_G.srv + o, X.y], [R(X), X.y]];
+      } else p = [[E.x, E.y + h], [E.x, yf], [X.x, yf], [X.x, X.y - h]];
+      return E === A ? p : p.reverse();
+    }
+    if (ca === 'pas' || cb === 'pas') {
+      var Pz = ca === 'pas' ? A : B, Q = ca === 'pas' ? B : A, yd = ECO_G.faixaDrive + o / 2, q;
+      q = Pz.x > Q.x ? [[R(Q), Q.y], [ECO_G.pan + o, Q.y], [ECO_G.pan + o, yd], [Pz.x, yd], [Pz.x, Pz.y - h]]
+        : [[L(Q), Q.y], [ECO_G.panEsq + o / 2, Q.y], [ECO_G.panEsq + o / 2, yd], [Pz.x, yd], [Pz.x, Pz.y - h]];
+      return Pz === B ? q : q.reverse();
+    }
+    if ((ca === 'pan' && cb === 'tab') || (ca === 'tab' && cb === 'pan')) {
+      var Pn = ca === 'pan' ? A : B, T = ca === 'pan' ? B : A, r;
+      r = Pn.y === T.y ? [[R(Pn), Pn.y], [L(T), T.y]] : [[R(Pn), Pn.y], [ECO_G.pan + o, Pn.y], [ECO_G.pan + o, T.y], [L(T), T.y]];
+      return Pn === A ? r : r.reverse();
+    }
+    if ((ca === 'srv' && cb === 'tab') || (ca === 'tab' && cb === 'srv')) { // atravessa a coluna de painéis por um vão
+      var Sv = ca === 'srv' ? A : B, Tb = ca === 'srv' ? B : A, yv = vaoAcima(Tb.y) + o / 3, s;
+      s = [[R(Sv), Sv.y], [ECO_G.srv + o, Sv.y], [ECO_G.srv + o, yv], [ECO_G.pan + o, yv], [ECO_G.pan + o, Tb.y], [L(Tb), Tb.y]];
+      return Sv === A ? s : s.reverse();
+    }
+    return [[A.x, A.y], [B.x, B.y]];
+  }
+  function arredondarEco(p, rr) {
+    var d = 'M' + p[0][0] + ',' + p[0][1];
+    for (var i = 1; i < p.length - 1; i++) {
+      var a = p[i - 1], b = p[i], c = p[i + 1];
+      var l1 = Math.hypot(b[0] - a[0], b[1] - a[1]), l2 = Math.hypot(c[0] - b[0], c[1] - b[1]), r = Math.min(rr, l1 / 2, l2 / 2);
+      if (!l1 || !l2) continue;
+      d += ' L' + (b[0] - (b[0] - a[0]) / l1 * r) + ',' + (b[1] - (b[1] - a[1]) / l1 * r) + ' Q' + b[0] + ',' + b[1] + ' ' + (b[0] + (c[0] - b[0]) / l2 * r) + ',' + (b[1] + (c[1] - b[1]) / l2 * r);
+    }
+    return d + ' L' + p[p.length - 1][0] + ',' + p[p.length - 1][1];
+  }
+
+  function renderEco() {
+    var nav = [{ id: 'mapa', nome: 'Mapa', ic: 'net' }, { id: 'lista', nome: 'Conexões', ic: 'list' }].map(function (v) {
+      return '<button class="' + (ECO.view === v.id ? 'ativo' : '') + '" data-acao="ecoView" data-id="' + v.id + '">' + ic(v.ic) + '<span>' + v.nome + '</span></button>';
+    }).join('');
+    $('#bottomNav').style.gridTemplateColumns = 'repeat(2, 1fr)';
+    $('#bottomNav').innerHTML = nav; $('#subnav').innerHTML = nav; $('#subnav').hidden = false;
+    var chips = '<div class="chips eco-chips">' + ECO_CATS.map(function (c) {
+      return '<button class="chip' + (ECO.cats[c.id] ? ' ativo' : '') + '" data-acao="ecoCat" data-id="' + c.id + '" title="' + esc(c.desc) + '"><i class="eco-dot c-' + c.id + '"></i>' + c.nome + '</button>';
+    }).join('') + '</div>';
+    if (ECO.view === 'lista') { $('#view').innerHTML = chips + listaEco(); return; }
+    var area = $('#ecoArea'), sx = area ? area.scrollLeft : 0, sy = area ? area.scrollTop : 0;
+    $('#view').innerHTML = chips + '<div class="eco-wrap"><div class="eco-area" id="ecoArea">' + svgEco() + '</div>' +
+      '<div class="eco-zoom"><button data-acao="ecoZoom" data-id="1.25" title="Aproximar">' + ic('plus') + '</button><button data-acao="ecoZoom" data-id="0.8" title="Afastar">' + ic('minus') + '</button><button data-acao="ecoZoom" data-id="0" title="Ajustar à tela">' + ic('fit') + '</button></div></div>' +
+      '<p class="muted eco-dica">Toque numa peça para ver o que ela faz e com quem se conecta. Use os filtros acima para mostrar ou esconder tipos de conexão.</p>';
+    area = $('#ecoArea');
+    if (!ECO.zoom || ECO.auto) { ECO.auto = true; ECO.zoom = Math.max(0.28, Math.min(1, (area.clientWidth - 4) / S.eco.canvas.w)); } // ajusta à largura até você mexer no zoom
+    aplicarZoomEco(); area.scrollLeft = sx; area.scrollTop = sy;
+    // na primeira abertura a largura ainda pode estar mudando: reajusta depois que a tela assenta
+    if (ECO.auto) setTimeout(function () {
+      var a2 = $('#ecoArea'); if (!a2 || !ECO.auto) return;
+      ECO.zoom = Math.max(0.28, Math.min(1, (a2.clientWidth - 4) / S.eco.canvas.w)); aplicarZoomEco();
+    }, 60);
+  }
+  function aplicarZoomEco() {
+    var s = $('#ecoSvg'); if (!s) return;
+    s.style.width = Math.round(S.eco.canvas.w * ECO.zoom) + 'px'; s.style.height = Math.round(S.eco.canvas.h * ECO.zoom) + 'px';
+  }
+  function svgEco() {
+    var D = S.eco, sel = ECO.sel, lig = {};
+    var pares = paresEco(D.fluxos.filter(function (f) { return ECO.cats[f.cat]; }));
+    if (sel) { lig[sel] = 1; pares.forEach(function (p) { if (p.from === sel || p.to === sel) { lig[p.from] = 1; lig[p.to] = 1; } }); }
+    var h = '<svg id="ecoSvg" class="eco-svg" viewBox="0 0 ' + D.canvas.w + ' ' + D.canvas.h + '" xmlns="http://www.w3.org/2000/svg"><defs>' +
+      ECO_CATS.map(function (c) { return '<marker id="eco-ah-' + c.id + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="eco-ah c-' + c.id + '"/></marker>'; }).join('') +
+      '</defs><rect class="eco-fundo" x="0" y="0" width="' + D.canvas.w + '" height="' + D.canvas.h + '" data-acao="ecoLimpar"/>';
+    D.zonas.forEach(function (z) {
+      h += '<rect class="eco-zona" x="' + z.x + '" y="' + z.y + '" width="' + z.w + '" height="' + z.h + '" rx="18"/>' +
+        '<text class="eco-zt" x="' + (z.x + 16) + '" y="' + (z.y + 22) + '">' + esc(z.t) + (z.s ? '<tspan class="eco-zs"> · ' + esc(z.s) + '</tspan>' : '') + '</text>';
+    });
+    var faixa = {};
+    pares.forEach(function (p) {
+      var cat = ECO_PRIO.find(function (c) { return p.fl.some(function (f) { return f.cat === c; }); });
+      var A = noEco(p.from), B = noEco(p.to); if (!A || !B) return;
+      var g = colEco(A) + colEco(B); faixa[g] = (faixa[g] || 0) + 1;
+      var ida = p.fl.some(function (f) { return f.from === p.from; }), volta = p.fl.some(function (f) { return f.from === p.to; });
+      var on = sel && (p.from === sel || p.to === sel);
+      h += '<path class="eco-e c-' + cat + (sel ? (on ? ' on' : ' dim') : '') + '" d="' + arredondarEco(trilhoEco(A, B, faixa[g] - 1), 14) + '"' +
+        (ida ? ' marker-end="url(#eco-ah-' + cat + ')"' : '') + (volta ? ' marker-start="url(#eco-ah-' + cat + ')"' : '') + '/>';
+    });
+    D.nos.forEach(function (n) {
+      var x = n.x - n.w / 2, y = n.y - ECO_H / 2;
+      h += '<g class="eco-no k-' + n.k + (sel ? (lig[n.id] ? (n.id === sel ? ' sel' : ' on') : ' dim') : '') + '" data-acao="ecoNo" data-id="' + n.id + '">' +
+        '<rect x="' + x + '" y="' + y + '" width="' + n.w + '" height="' + ECO_H + '" rx="12"/>' +
+        '<text class="eco-nl" x="' + n.x + '" y="' + (n.sub ? n.y - 3 : n.y + 5) + '">' + esc(n.label) + '</text>' +
+        (n.sub ? '<text class="eco-ns" x="' + n.x + '" y="' + (n.y + 15) + '">' + esc(n.sub) + '</text>' : '') + '</g>';
+    });
+    return h + '</svg>';
+  }
+  function fluxoEcoHtml(f, perspectiva) {
+    var de = noEco(f.from), para = noEco(f.to), sai = f.from === perspectiva;
+    var outro = perspectiva ? (sai ? para : de) : null;
+    return '<div class="eco-fl"><div class="eco-fl-top"><i class="eco-dot c-' + f.cat + '"></i>' +
+      (perspectiva ? '<span class="muted">' + (sai ? f.op + ' →' : '← ' + f.op) + '</span> <button class="eco-link" data-acao="ecoNo" data-id="' + outro.id + '">' + esc(outro.label) + '</button>'
+        : '<button class="eco-link" data-acao="ecoNo" data-id="' + de.id + '">' + esc(de.label) + '</button> <span class="muted">' + esc(f.op) + ' →</span> <button class="eco-link" data-acao="ecoNo" data-id="' + para.id + '">' + esc(para.label) + '</button>') +
+      '</div>' + (f.onde ? '<div class="eco-onde">' + esc(f.onde) + (f.freq ? ' · ' + esc(f.freq) : '') + '</div>' : '') + (f.texto ? '<p>' + esc(f.texto) + '</p>' : '') + '</div>';
+  }
+  function abrirNoEco(id) {
+    var n = noEco(id); if (!n) return;
+    ECO.sel = id; if (ECO.view === 'mapa') render();
+    var F = S.eco.fluxos.filter(function (f) { return f.from === id || f.to === id; });
+    F.sort(function (a, b) { return ECO_PRIO.indexOf(a.cat) - ECO_PRIO.indexOf(b.cat); });
+    var h = '<h2><span>' + esc(n.label) + '</span><button class="icon-btn" data-acao="fechar">' + ic('x') + '</button></h2>' +
+      '<div class="eco-tags"><span class="tag">' + ECO_KINDS[n.k] + '</span>' + (n.sub ? '<span class="muted" style="font-size:13px">' + esc(n.sub) + '</span>' : '') + '</div>' +
+      '<p style="margin:0 0 14px;line-height:1.55">' + esc(n.desc) + '</p>' +
+      '<div class="secao"><span>Conexões</span><span>' + F.length + '</span></div>' +
+      (F.length ? F.map(function (f) { return fluxoEcoHtml(f, id); }).join('') : '<p class="muted">Nenhuma conexão direta.</p>');
+    abrirSheet(h);
+  }
+  function listaEco() {
+    var h = '';
+    ECO_CATS.forEach(function (c) {
+      if (!ECO.cats[c.id]) return;
+      var F = S.eco.fluxos.filter(function (f) { return f.cat === c.id; });
+      if (!F.length) return;
+      h += '<div class="secao"><span><i class="eco-dot c-' + c.id + '"></i> ' + c.nome + '</span><span>' + F.length + '</span></div>' +
+        '<p class="muted" style="margin:-4px 4px 8px;font-size:13px">' + c.desc + '</p><div class="card eco-lista">' + F.map(function (f) { return fluxoEcoHtml(f, null); }).join('') + '</div>';
+    });
+    return h || vazio('net', 'Nenhum tipo de conexão selecionado', 'Ligue algum filtro acima.');
   }
 
   /* ================= LINHA DO TEMPO ================= */
@@ -3915,6 +4139,20 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
           return '<button class="item mod-item" data-acao="modulo" data-id="' + m.id + '" style="width:100%;' + (m.breve ? 'opacity:.6' : '') + '">' + ic(m.ic) + '<div class="corpo"><div class="desc">' + esc(m.nome) + '</div><div class="meta">' + (m.breve ? 'Em breve' : m.id === S.modulo ? 'Aberto agora' : 'Toque para abrir') + '</div></div>' + (m.id === S.modulo ? ic('check') : '') + '</button>';
         }).join('') + '</div>');
         break;
+      // ecossistema
+      case 'ecoView': ECO.view = id; store('cm_ecoview', id); render(); window.scrollTo(0, 0); break;
+      case 'ecoCat': ECO.cats[id] = ECO.cats[id] ? 0 : 1; render(); break;
+      case 'ecoNo': abrirNoEco(id); break;
+      case 'ecoLimpar': if (ECO.sel) { ECO.sel = null; render(); } break;
+      case 'ecoZoom':
+        if (+id === 0) { ECO.zoom = 0; render(); }
+        else {
+          ECO.auto = false;
+          var ea = $('#ecoArea'), z0 = ECO.zoom, cx = ea.scrollLeft + ea.clientWidth / 2, cy = ea.scrollTop + ea.clientHeight / 2;
+          ECO.zoom = Math.max(0.25, Math.min(2, ECO.zoom * +id)); aplicarZoomEco();
+          ea.scrollLeft = cx * ECO.zoom / z0 - ea.clientWidth / 2; ea.scrollTop = cy * ECO.zoom / z0 - ea.clientHeight / 2; // mantém o centro
+        }
+        break;
       // linha do tempo
       case 'ltIr': irMarco(+id, true); break;
       case 'ltAnt': irMarco(LT.atual - 1, true); break;
@@ -4369,7 +4607,10 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) irMarco(LT.atual + (dx < 0 ? 1 : -1), true);
     tx = null;
   }, { passive: true });
-  window.addEventListener('resize', function () { if (S.modulo === 'lin') posicionarFioLt(); });
+  window.addEventListener('resize', function () {
+    if (S.modulo === 'lin') posicionarFioLt();
+    if (S.modulo === 'eco' && ECO.auto && ECO.view === 'mapa' && S.eco) render();
+  });
 
   // Recarrega dados ao voltar para o app (ex.: depois de horas em segundo plano).
   document.addEventListener('visibilitychange', function () {
