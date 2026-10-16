@@ -596,7 +596,24 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 .lt-quadro { position: relative; display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); height: clamp(380px, 60vh, 560px); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
 .lt-img { position: relative; background: var(--surface-2); overflow: hidden; border-right: 1px solid var(--border); }
 .lt-img .lt-fundo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(24px) saturate(1.1); opacity: .55; transform: scale(1.1); }
-.lt-img img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.lt-img img.lt-foto { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+/* logo da empresa: no canto quando há foto; em destaque no centro quando não há */
+.lt-logo { position: absolute; top: 14px; left: 14px; z-index: 2; width: 64px; height: 64px; padding: 7px; border-radius: 16px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25); display: grid; place-items: center; }
+.lt-logo img { width: 100%; height: 100%; object-fit: contain; }
+.lt-logo-grande { max-width: 58%; max-height: 42%; object-fit: contain; border-radius: 14px; }
+.lt-ano-grande.peq { font-size: clamp(32px, 4vw, 44px); }
+/* links (Drive / Google Fotos) na base da área da imagem */
+.lt-links { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; }
+.lt-link { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px 0 10px; border-radius: 99px; background: rgba(255,255,255,.94); color: #111827; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,.22); transition: transform .12s; }
+.lt-link:hover { transform: translateY(-1px); }
+.lt-ico { width: 18px; height: 18px; flex: none; stroke: none !important; }
+.campo > span .lt-ico { width: 16px; height: 16px; vertical-align: -3px; margin-right: 2px; }
+.lt-flogo { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.lt-flogo-prev { width: 76px; height: 76px; flex: none; border-radius: 16px; background: #fff center / contain no-repeat; border: 1.5px dashed var(--border); display: grid; place-items: center; color: var(--muted); }
+.lt-flogo-prev:not([style]) { background-color: var(--surface-2); }
+.lt-flogo-prev svg { width: 26px; height: 26px; }
+.lt-flogo-bts { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.lt-flogo-bts .btn { min-height: 44px; font-size: 15px; }
 .lt-semfoto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 12.5px; }
 .lt-ano-grande { font: 800 clamp(56px, 8vw, 96px)/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--accent); letter-spacing: -.04em; opacity: .9; }
 .lt-carregando { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--text) 7%, transparent) 50%, transparent 70%) var(--surface-2); background-size: 220% 100%; animation: brilho 1.2s linear infinite; }
@@ -2359,19 +2376,27 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     api('marcoImagem', { id: id }).then(function (r) { ltImg[id] = 'data:' + r.mime + ';base64,' + r.base64; }, function () { ltImg[id] = 'erro'; }).then(function () {
       ltBaixando = false; delete ltPedindo[id];
       var m = S.lt && S.lt.marcos[LT.atual];
-      if (S.modulo === 'lin' && m && m.imagemId === id) pintarImgMarco(m);
+      if (S.modulo === 'lin' && m && (m.imagemId === id || m.logoId === id)) pintarImgMarco(m);
       baixarImgMarco();
     });
   }
+  // Ícones coloridos dos links (stroke:none — o estilo global de ícones não pode vazar aqui)
+  var ICO_DRIVE = '<svg class="lt-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#0f9d58" d="M7.7 3.5L1 15l3.3 5.7L11 9.2z"/><path fill="#f4b400" d="M16.3 3.5H7.7L14.4 15H23z"/><path fill="#4285f4" d="M23 15H9.6l-3.3 5.7h13.4z"/></svg>';
+  var ICO_FOTOS = '<svg class="lt-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#ea4335" d="M12 12V3a4.5 4.5 0 0 1 0 9z"/><path fill="#4285f4" d="M12 12h9a4.5 4.5 0 0 1-9 0z"/><path fill="#34a853" d="M12 12v9a4.5 4.5 0 0 1 0-9z"/><path fill="#fbbc04" d="M12 12H3a4.5 4.5 0 0 1 9 0z"/></svg>';
   function pintarImgMarco(m) {
     var box = $('#ltImg'); if (!box) return;
-    var url = m.imagemId ? ltImg[m.imagemId] : null;
-    if (m.imagemId && !url) { box.innerHTML = '<div class="lt-carregando"></div>'; return; }
-    if (!m.imagemId || url === 'erro') {
-      box.innerHTML = '<div class="lt-semfoto"><span class="lt-ano-grande">' + esc(m.ano) + '</span>' + (url === 'erro' ? '<small>Não foi possível carregar a foto.</small>' : '') + '</div>';
-      return;
-    }
-    box.innerHTML = '<div class="lt-fundo" style="background-image:url(\'' + url + '\')"></div><img alt="' + esc(m.titulo) + '" src="' + url + '">';
+    var url = m.imagemId ? ltImg[m.imagemId] : null, logo = m.logoId ? ltImg[m.logoId] : null;
+    var temFoto = url && url !== 'erro', temLogo = logo && logo !== 'erro', h;
+    if (m.imagemId && !url) h = '<div class="lt-carregando"></div>';
+    else if (!temFoto) // sem foto: o logo (se houver) fica em destaque no centro, com o ano embaixo
+      h = '<div class="lt-semfoto">' + (temLogo ? '<img class="lt-logo-grande" alt="Logo" src="' + logo + '">' : '') +
+        '<span class="lt-ano-grande' + (m.logoId ? ' peq' : '') + '">' + esc(m.ano) + '</span>' + (url === 'erro' ? '<small>Não foi possível carregar a foto.</small>' : '') + '</div>';
+    else h = '<div class="lt-fundo" style="background-image:url(\'' + url + '\')"></div><img class="lt-foto" alt="' + esc(m.titulo) + '" src="' + url + '">';
+    if (temFoto && temLogo) h += '<span class="lt-logo"><img alt="Logo" src="' + logo + '"></span>'; // com foto: logo no canto
+    var links = (m.linkDrive ? '<a class="lt-link" href="' + esc(m.linkDrive) + '" target="_blank" rel="noopener" title="Abrir no Google Drive">' + ICO_DRIVE + '<span>Drive</span></a>' : '') +
+      (m.linkFotos ? '<a class="lt-link" href="' + esc(m.linkFotos) + '" target="_blank" rel="noopener" title="Abrir no Google Fotos">' + ICO_FOTOS + '<span>Fotos</span></a>' : '');
+    if (links) h += '<div class="lt-links">' + links + '</div>';
+    box.innerHTML = h;
   }
 
   function renderLin() {
@@ -2412,8 +2437,9 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     var at = $('#ltLinhaIn .lt-marco.ativo'), ln = $('#ltLinha');
     if (at && ln) ln.scrollLeft = Math.max(0, at.offsetLeft + at.offsetWidth / 2 - ln.clientWidth / 2);
     // foto atual primeiro, depois as vizinhas, depois o resto em segundo plano
+    if (m.logoId) pedirImgMarco(m.logoId, true);
     [k, k + 1, k - 1, k + 2, k - 2].forEach(function (i, n) { if (M[i] && M[i].imagemId) pedirImgMarco(M[i].imagemId, n === 0); });
-    M.forEach(function (x) { if (x.imagemId) pedirImgMarco(x.imagemId, false); });
+    M.forEach(function (x) { if (x.logoId) pedirImgMarco(x.logoId, false); if (x.imagemId) pedirImgMarco(x.imagemId, false); });
   }
   // uma linha tracejada contínua do centro da primeira bolinha ao centro da última
   function posicionarFioLt() {
@@ -2440,8 +2466,11 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   function formMarco(id) {
     var x = id ? S.lt.marcos.find(function (o) { return o.id === id; }) : null;
     var img = x && x.imagemId && ltImg[x.imagemId] !== 'erro' ? ltImg[x.imagemId] || '' : '';
-    FL = x ? { id: x.id, ano: x.ano, mes: x.mes, titulo: x.titulo, subtitulo: x.subtitulo, texto: x.texto, imagem: null, preview: img, tinhaFoto: !!x.imagemId, remover: false }
-      : { id: '', ano: new Date().getFullYear(), mes: 0, titulo: '', subtitulo: '', texto: '', imagem: null, preview: '', tinhaFoto: false, remover: false };
+    var lg = x && x.logoId && ltImg[x.logoId] !== 'erro' ? ltImg[x.logoId] || '' : '';
+    FL = x ? { id: x.id, ano: x.ano, mes: x.mes, titulo: x.titulo, subtitulo: x.subtitulo, texto: x.texto, imagem: null, preview: img, tinhaFoto: !!x.imagemId, remover: false,
+        logo: null, logoPrev: lg, tinhaLogo: !!x.logoId, removerLogo: false, linkDrive: x.linkDrive || '', linkFotos: x.linkFotos || '' }
+      : { id: '', ano: new Date().getFullYear(), mes: 0, titulo: '', subtitulo: '', texto: '', imagem: null, preview: '', tinhaFoto: false, remover: false,
+        logo: null, logoPrev: '', tinhaLogo: false, removerLogo: false, linkDrive: '', linkFotos: '' };
     renderFormMarco();
   }
   function renderFormMarco() {
@@ -2457,6 +2486,15 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     h += '<label class="campo"><span>Subtítulo (opcional)</span><input id="flSub" maxlength="200" value="' + esc(f.subtitulo) + '" placeholder="Ex.: Empresa, cidade ou uma frase curta" autocomplete="off"></label>';
     h += '<label class="campo"><span>O que aconteceu (opcional)</span><textarea id="flTexto" maxlength="6000" rows="6" placeholder="Conte a história desse marco: o desafio, o que você fez, o resultado…">' + esc(f.texto) + '</textarea></label>';
     h += '<p class="muted" style="font-size:12.5px;margin:-4px 0 14px">O mês só define a ordem entre marcos do mesmo ano.</p>';
+    // logo da empresa
+    var temLogo = !!(f.logoPrev || (f.tinhaLogo && !f.removerLogo));
+    h += '<div class="campo"><span>Logo da empresa (opcional)</span><div class="lt-flogo">' +
+      '<div class="lt-flogo-prev"' + (f.logoPrev ? ' style="background-image:url(\'' + f.logoPrev + '\')"' : '') + '>' + (f.logoPrev ? '' : temLogo ? '<small>Logo atual</small>' : ic('briefcase')) + '</div>' +
+      '<div class="lt-flogo-bts"><label class="btn sec" style="cursor:pointer">' + ic('image') + (temLogo ? 'Trocar logo' : 'Escolher logo') + '<input type="file" accept="image/*" hidden id="ltLogo"></label>' +
+      (temLogo ? '<button class="btn perigo" data-acao="ltSemLogo">' + ic('trash') + 'Remover</button>' : '') + '</div></div></div>';
+    // links
+    h += '<label class="campo"><span>' + ICO_DRIVE + ' Link do Google Drive (opcional)</span><input id="flDrive" type="url" inputmode="url" value="' + esc(f.linkDrive) + '" placeholder="https://drive.google.com/…" autocomplete="off"></label>';
+    h += '<label class="campo"><span>' + ICO_FOTOS + ' Link do Google Fotos (opcional)</span><input id="flFotos" type="url" inputmode="url" value="' + esc(f.linkFotos) + '" placeholder="https://photos.app.goo.gl/…" autocomplete="off"></label>';
     h += '<div class="acoes"><button class="btn pri" data-acao="ltSalvar" id="flSalvar">' + ic('check') + (f.id ? 'Salvar' : 'Adicionar marco') + '</button>' +
       (f.id ? '<button class="btn perigo" data-acao="ltExcluir" data-id="' + f.id + '">' + ic('trash') + 'Excluir marco</button>' : '') + '</div>';
     abrirSheet(h);
@@ -2465,19 +2503,22 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (!FL || !$('#flTit')) return;
     FL.ano = $('#flAno').value; FL.mes = +$('#flMes').value || 0;
     FL.titulo = $('#flTit').value; FL.subtitulo = $('#flSub').value; FL.texto = $('#flTexto').value;
+    FL.linkDrive = $('#flDrive').value.trim(); FL.linkFotos = $('#flFotos').value.trim();
   }
-  function fotoMarco(file) {
+  function fotoMarco(file, ehLogo) {
     if (!file || file.type.indexOf('image/') !== 0) return toast('Escolha uma imagem', true);
     lerFL();
-    // Foto do marco: até 1400px no lado maior, JPEG 0,82 (~150–300 KB)
+    // Foto: até 1400px, JPEG 0,82 (~150–300 KB). Logo: até 512px; PNG continua PNG (mantém o fundo transparente).
     var url = URL.createObjectURL(file), img = new Image();
     img.onload = function () {
-      var k = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+      var k = Math.min(1, (ehLogo ? 512 : 1400) / Math.max(img.naturalWidth, img.naturalHeight));
       var cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
       URL.revokeObjectURL(url);
-      var dataUrl = cv.toDataURL('image/jpeg', 0.82);
-      FL.imagem = { mime: 'image/jpeg', base64: dataUrl.split(',')[1] }; FL.preview = dataUrl; FL.remover = false;
+      var mime = ehLogo && file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      var dataUrl = cv.toDataURL(mime, ehLogo ? 0.9 : 0.82);
+      if (ehLogo) { FL.logo = { mime: mime, base64: dataUrl.split(',')[1] }; FL.logoPrev = dataUrl; FL.removerLogo = false; }
+      else { FL.imagem = { mime: 'image/jpeg', base64: dataUrl.split(',')[1] }; FL.preview = dataUrl; FL.remover = false; }
       renderFormMarco();
     };
     img.onerror = function () { URL.revokeObjectURL(url); toast('Não foi possível abrir essa imagem', true); };
@@ -2488,11 +2529,15 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     var f = FL, ano = parseInt(f.ano, 10);
     if (!ano || ano < 1950 || ano > 2100) return toast('Informe um ano válido', true);
     if (!f.titulo.trim()) return toast('Informe o título', true);
-    var b = $('#flSalvar'); b.disabled = true; b.textContent = f.imagem ? 'Enviando foto…' : 'Salvando…';
-    var previa = f.preview;
-    mutar('marcoSalvar', { id: f.id, ano: ano, mes: f.mes, titulo: f.titulo, subtitulo: f.subtitulo, texto: f.texto, imagem: f.imagem, removerImagem: f.remover }).then(function (d) {
+    if ((f.linkDrive && !/^https:\/\//i.test(f.linkDrive)) || (f.linkFotos && !/^https:\/\//i.test(f.linkFotos))) return toast('Os links precisam começar com https://', true);
+    var b = $('#flSalvar'); b.disabled = true; b.textContent = f.imagem || f.logo ? 'Enviando imagem…' : 'Salvando…';
+    var previa = f.preview, previaLogo = f.logoPrev;
+    mutar('marcoSalvar', { id: f.id, ano: ano, mes: f.mes, titulo: f.titulo, subtitulo: f.subtitulo, texto: f.texto, imagem: f.imagem, removerImagem: f.remover,
+      logo: f.logo, removerLogo: f.removerLogo, linkDrive: f.linkDrive, linkFotos: f.linkFotos }).then(function (d) {
       var m = d.marcos.find(function (o) { return o.id === d.salvo; });
-      if (m && m.imagemId && f.imagem) ltImg[m.imagemId] = previa; // a foto nova já está aqui: não baixa de volta
+      // as imagens novas já estão aqui: não baixa de volta
+      if (m && m.imagemId && f.imagem) ltImg[m.imagemId] = previa;
+      if (m && m.logoId && f.logo) ltImg[m.logoId] = previaLogo;
       LT.id = d.salvo; LT.dir = 0; store('cm_lt_atual', d.salvo);
       fecharSheet(); FL = null; render(); toast(f.id ? 'Marco atualizado' : 'Marco adicionado 🏆');
     }, function () { b.disabled = false; b.innerHTML = ic('check') + 'Tentar de novo'; });
@@ -3877,6 +3922,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
       case 'ltNovo': formMarco(null); break;
       case 'ltEditar': formMarco(id); break;
       case 'ltSemFoto': lerFL(); FL.imagem = null; FL.preview = ''; FL.remover = true; renderFormMarco(); break;
+      case 'ltSemLogo': lerFL(); FL.logo = null; FL.logoPrev = ''; FL.removerLogo = true; renderFormMarco(); break;
       case 'ltSalvar': salvarFL(); break;
       case 'ltExcluir':
         var mx0 = S.lt.marcos.find(function (o) { return o.id === id; });
@@ -4274,6 +4320,7 @@ body.mod-lin main { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     if (t.hasAttribute && t.hasAttribute('data-anexar')) { anexar(t.getAttribute('data-anexar'), t.files[0]); t.value = ''; }
     if (t.id === 'cardFoto') { fotoCard(t.files[0]); t.value = ''; }
     if (t.id === 'ltFoto') { fotoMarco(t.files[0]); t.value = ''; }
+    if (t.id === 'ltLogo') { fotoMarco(t.files[0], true); t.value = ''; }
     if ((t.id === 'faVenc' || t.id === 'faParc') && FA) { lerFA(); renderAprovar(); } // atualiza a prévia das parcelas
     if ((t.id === 'faoD1' || t.id === 'faoD2') && FAO) { lerFAO(); renderAprovarOrc(); }
     if (t.id === 'foParc' && FO) { lerFO(); atualizarTotaisFO(); }
